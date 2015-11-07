@@ -14,17 +14,24 @@ public class JVM {
         static final Deque<Frame> frameStack = new ArrayDeque<>();
         static final Heap heap = new Heap();
         static final HashMap<String, JavaClass> classTable = new HashMap<>();
+        //native methods stack?
 
-    public static void main(String[] args) throws IOException {
+    public static void main(String[] args) throws IOException, Exception {
         
-        JavaClass clazz = (new ClassParser(args[0])).parse();
-        classTable.put(clazz.getClassName(), clazz);
+        JavaClass mainClass = (new ClassParser(args[0])).parse();
+        classTable.put(mainClass.getClassName(), mainClass);
         
+        //vytvoří se frame pro main funkci, hodí se na stack a spustí se
+        //argumenty z příkazové řádky je třeba naparsovat do příslušné Value třídy
+        frameStack.push(new Frame(mainClass.getMethods()[1], null, null));
+        frameStack.peek().start();
+        //program doběhl
+        //uklidim stack
+        frameStack.pop();
+        //uklidim haldu a classTable?
         
-        
-        
-        System.out.println(classTable.get("testapp.TestApp").getMethods()[1].getCode());
-        System.out.println(((ConstantInteger)classTable.get("testapp.TestApp").getConstantPool().getConstant(2)).getBytes());
+        System.out.println(classTable.get("testapp.TestApp").getMethods()[2]);
+//        System.out.println(((ConstantInteger)classTable.get("testapp.TestApp").getConstantPool().getConstant(2)).getBytes());
 
     }
     
