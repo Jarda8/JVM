@@ -1,5 +1,6 @@
-package jvm.Frame;
+package jvm.frame;
 
+import jvm.values.Value;
 import java.util.ArrayDeque;
 import java.util.Deque;
 import org.apache.bcel.classfile.ConstantPool;

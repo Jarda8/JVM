@@ -1,13 +1,13 @@
-package jvm.Frame;
+package jvm.values;
 
 /**
  *
  * @author Jaroslav Ševčík
  */
-public class DoubleValue extends Value{
-    private double value;
+public class CharValue extends Value{
+    private char value;
 
-    public DoubleValue(int value) {
+    public CharValue(char value) {
         this.value = value;
     }
 
@@ -15,7 +15,7 @@ public class DoubleValue extends Value{
         return value;
     }
 
-    public void setValue(double value) {
+    public void setValue(char value) {
         this.value = value;
     }
     

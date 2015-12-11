@@ -4,7 +4,7 @@ import java.io.*;
 import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.HashMap;
-import jvm.Frame.Frame;
+import jvm.frame.Frame;
 import org.apache.bcel.classfile.ClassParser;
 import org.apache.bcel.classfile.ConstantInteger;
 import org.apache.bcel.classfile.JavaClass;
