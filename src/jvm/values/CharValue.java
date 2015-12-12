@@ -11,7 +11,7 @@ public class CharValue extends Value{
         this.value = value;
     }
 
-    public double getValue() {
+    public int getValue() {
         return value;
     }
 
