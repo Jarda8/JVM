@@ -16,10 +16,10 @@ public class Heap {
     
     public int allocateObject (JavaClass clazz) {
         int ptr = firstFree;
+        //ještě tu budou nějaký flagy
         for (int i = 0; i < clazz.getFields().length; i++) {
             firstFree += clazz.getFields()[i].getType().getSize();
         }
-        
         return ptr;
     }
     
