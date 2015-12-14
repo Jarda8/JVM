@@ -5,10 +5,11 @@ import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.HashMap;
 import jvm.frame.Frame;
+import jvm.values.ReferenceValue;
 import jvm.values.Value;
 import org.apache.bcel.classfile.ClassParser;
-import org.apache.bcel.classfile.ConstantInteger;
 import org.apache.bcel.classfile.JavaClass;
+import org.apache.bcel.classfile.Method;
 
 public class JVM {
 
@@ -21,7 +22,8 @@ public class JVM {
     public static void main(String[] args) throws Exception {
 
         //loading core classes
-        classTable.put("initclasses.StringObj", (new ClassParser("initclasses\\StringObj.class")).parse());
+        classTable.put("initclasses/Sring", (new ClassParser("initclasses/String.class")).parse());
+        classTable.put("initclasses/Object", (new ClassParser("initclasses/String.class")).parse());
 
 //        heap.allocateObject(classTable.get("initclasses.StringObj"));
         
@@ -29,9 +31,9 @@ public class JVM {
         JavaClass mainClass = (new ClassParser(args[0])).parse();
         classTable.put(mainClass.getClassName(), mainClass);
 
-        for (int i = 0; i < mainClass.getMethods()[1].getCode().getCode().length; i++) {
-            System.out.println(unsignedToBytes(mainClass.getMethods()[1].getCode().getCode()[i]));
-        }
+//        for (int i = 0; i < mainClass.getMethods()[1].getCode().getCode().length; i++) {
+//            System.out.println(unsignedToBytes(mainClass.getMethods()[1].getCode().getCode()[i]));
+//        }
 
         //vytvoří se frame pro main funkci, hodí se na stack a spustí se
         //argumenty z příkazové řádky je třeba dát do našeho stringu
@@ -66,10 +68,16 @@ public class JVM {
     public static JavaClass getJavaClass (String className) throws IOException {
         JavaClass result = classTable.get(className);
         if (result == null) {
-            result = (new ClassParser(className)).parse();
+            result = (new ClassParser(className + ".class")).parse();
             classTable.put(className, result);
         }
         return result;
+    }
+    
+    public static void callMethod(Method method, Value[] arguments, ReferenceValue thisHeapIndex, Frame invoker) throws Exception {
+        frameStack.push(new Frame(method, arguments, thisHeapIndex, invoker));
+        frameStack.peek().start();
+        frameStack.pop();
     }
 
     //pomocná funkce na výpis unsigned bytů
