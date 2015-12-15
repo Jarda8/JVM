@@ -1,7 +1,11 @@
 package jvm;
 
+import java.io.IOException;
 import java.nio.ByteBuffer;
 import jvm.values.*;
+import org.apache.bcel.classfile.ConstantClass;
+import org.apache.bcel.classfile.ConstantUtf8;
+import org.apache.bcel.classfile.Field;
 import org.apache.bcel.classfile.JavaClass;
 
 /**
@@ -12,30 +16,76 @@ public class Heap {
 
     private static final int HEAP_SIZE = (int) Math.pow(2, 20);
     public final ByteBuffer heap = ByteBuffer.allocate(HEAP_SIZE);
+    public static final int OBJECT_HEAD_SIZE = 4;
     //Alokuje se za sebe a adekvátně se posune index prvního volného místa.
     public int firstFree = 0;
-    
-    public int allocateObject (JavaClass clazz) {
+
+    public ReferenceValue allocateObject(ReferenceValue classRef) throws Exception {
         int ptr = firstFree;
-        //ještě tu budou nějaký flagy a odkaz na třídu
-        for (int i = 0; i < clazz.getFields().length; i++) {
-            firstFree += clazz.getFields()[i].getType().getSize();
+        JavaClass clazz = jvm.JVM.getJavaClassByIndex(classRef);
+        //ještě tu budou nějaký flagy
+        heap.putInt(firstFree, classRef.getValue());//odkaz na třídu
+        firstFree += 4;
+        
+        if (clazz.getSuperclassName() != null) {
+            String superClassName = ((ConstantUtf8) clazz.getConstantPool().getConstant(((ConstantClass) clazz.getConstantPool().getConstant(clazz.getSuperclassNameIndex())).getNameIndex())).getBytes();
+            allocateSuperclassFields(jvm.JVM.getJavaClass(superClassName));
         }
-        return ptr;
+
+        for (Field field : clazz.getFields()) {
+            allocateType(field.getType().getType());
+        }
+        return new ReferenceValue(ptr);
     }
-    
-    public int alocateArray (int length, int sizeOfElement) {
+
+    private void allocateSuperclassFields(JavaClass superClass) throws Exception {
+        
+        if (superClass.getClassName().equals("initclasses.Object")) {
+            return;
+        }
+
+        if (superClass.getSuperclassName() != null) {
+            String superClassName = ((ConstantUtf8) superClass.getConstantPool().getConstant(((ConstantClass) superClass.getConstantPool().getConstant(superClass.getSuperclassNameIndex())).getNameIndex())).getBytes();
+            allocateSuperclassFields(jvm.JVM.getJavaClass(superClassName));
+        }
+
+        for (Field field : superClass.getFields()) {
+            allocateType(field.getType().getType());
+        }
+    }
+
+    private void allocateType(byte type) throws Exception {
+        switch (type) {
+            case 10:
+                firstFree += 4;
+                break;//int
+            case 5:
+                firstFree += 2;
+                break;//char
+            default:
+                throw new Exception("Neznámý typ při alokaci fieldu");
+        }
+    }
+
+    public ReferenceValue alocateArray(int length, int sizeOfElement) {
         int ptr = firstFree;
         heap.putInt(firstFree, length);
         firstFree += length * sizeOfElement + 4;
-        return ptr;
+        return new ReferenceValue(ptr);
     }
-    
-    public void storeInt (IntValue v, ReferenceValue objRef, int offset) {
+
+    public void storeInt(IntValue v, ReferenceValue objRef, int offset) {
         heap.putInt(objRef.getValue() + offset, v.getValue());
     }
-    
-    public void storeChar (CharValue v, ReferenceValue objRef, int offset) {
+
+    public void storeChar(CharValue v, ReferenceValue objRef, int offset) {
         heap.putChar(objRef.getValue() + offset, v.getValue());
+    }
+
+    public void dumbHeap() {
+        System.out.println("heap dump:");
+        for (int i = 0; i < firstFree; i++) {
+            System.out.println(jvm.JVM.unsignedToBytes(heap.get(i)));
+        }
     }
 }

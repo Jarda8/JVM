@@ -94,8 +94,17 @@ public class Frame {
                 case 0x8:
                     iconst_5();
                     break;
+                case 0x3b:
+                    istore_0();
+                    break;
                 case 0x3c:
                     istore_1();
+                    break;
+                case 0x3d:
+                    istore_2();
+                    break;
+                case 0x3e:
+                    istore_3();
                     break;
                 case (byte) 0xb1:
                     ret();
@@ -148,6 +157,9 @@ public class Frame {
                 case 0x4e:
                     astore_3();
                     break;
+                case 0x11:
+                    sipush();
+                    break;
                 default:
                     throw new Exception("Neznámá instrukce " + code[pc]);
             }
@@ -162,11 +174,28 @@ public class Frame {
         pc++;
     }
 
+    private void istore_0() {
+        System.out.println("istore_0");
+        pc++;
+        localVariables[0] = operandStack.pop();
+    }
+
     private void istore_1() {
         System.out.println("istore_1");
         pc++;
         localVariables[1] = operandStack.pop();
+    }
+
+    private void istore_2() {
+        System.out.println("istore_2");
         pc++;
+        localVariables[2] = operandStack.pop();
+    }
+
+    private void istore_3() {
+        System.out.println("istore_3");
+        pc++;
+        localVariables[3] = operandStack.pop();
     }
 
     private void ret() {
@@ -174,14 +203,14 @@ public class Frame {
         pc = code.length;
     }
 
-    private void neww() throws IOException {
+    private void neww() throws Exception {
         System.out.println("new");
         pc++;
         int constPoolIndex = code[pc] << 8 | (code[pc + 1] & 0xFF);
         int nameIndex = ((ConstantClass) constantPool.getConstant(constPoolIndex)).getNameIndex();
         String className = ((ConstantUtf8) constantPool.getConstant(nameIndex)).getBytes();
-        JavaClass objClass = jvm.JVM.getJavaClass(className);
-        ReferenceValue objRef = new ReferenceValue(jvm.JVM.heap.allocateObject(objClass));
+        ReferenceValue classRef = jvm.JVM.getJavaClassRef(className);
+        ReferenceValue objRef = jvm.JVM.heap.allocateObject(classRef);
         operandStack.push(objRef);
         pc += 2;
     }
@@ -236,7 +265,7 @@ public class Frame {
         operandStack.push(new IntValue(5));
     }
 
-    private void invokespecial() throws IOException, Exception {
+    private void invokespecial() throws Exception {
         System.out.println("invokespecial");
         pc++;
         int constPoolIndex = code[pc] << 8 | (code[pc + 1] & 0xFF);
@@ -244,9 +273,6 @@ public class Frame {
         int classIndex = methodRef.getClassIndex();
         int classNameIndex = ((ConstantClass) constantPool.getConstant(classIndex)).getNameIndex();
         String className = ((ConstantUtf8) constantPool.getConstant(classNameIndex)).getBytes();
-        if (className.equals("java/lang/Object")) {
-            className = "initclasses/Object";
-        }
 
         int nameAndTypeIndex = methodRef.getNameAndTypeIndex();
         ConstantNameAndType nameAndType = (ConstantNameAndType) constantPool.getConstant(nameAndTypeIndex);
@@ -255,13 +281,16 @@ public class Frame {
 
         System.out.println("metoda " + methodName + " třídy " + className);
 
-        if (className.equals("initclasses/Object") && methodName.equals("<init>")) {
+        if (className.equals("java/lang/Object") && methodName.equals("<init>")) {
             pc += 2;
             System.out.println("Doběhla metoda " + methodName);
             return;
         }
 
         Method m = null;
+        //TODO Takhle patrně zjistím třídu proměnné, na které byla metoda zavolána, nikoliv třídu konkrétní instance (Může to být podtřída.).
+        //Třída se bude muset zjistit z instance na haldě. Index na haldu je v localVariables[0] (pokud jde o instanční metodu) a index do classTable je na prvním místě v instanci.
+        //Tohle se možná nemusí řešit v invokespecial, ale v invokevirtual nebo jak se jmenuje ta instrukce.
         JavaClass clazz = jvm.JVM.getJavaClass(className);
         for (int i = 0; i < clazz.getMethods().length; i++) {
             if (clazz.getMethods()[i].getName().equals(methodName)) {
@@ -355,8 +384,31 @@ public class Frame {
         pc++;
         localVariables[3] = operandStack.pop();
     }
+    
+    private int getTypeSize (byte type) throws Exception {
+        int result;
+        switch (type) {
+                 case 10: result = 4; break;//int
+                 case 5: result = 2; break;//char
+                 default: throw new Exception("Neznámý typ při zjišťování velikosti typu: " + type);
+             }
+        return result;
+    }
 
-    private void putfield() throws IOException, Exception {
+    private int getSuperclassesFieldsSize(JavaClass clazz) throws Exception {
+        if (clazz.getClassName().equals("initclasses.Object")) {
+            return 0;
+        }
+        String superClassName = ((ConstantUtf8) clazz.getConstantPool().getConstant(((ConstantClass) clazz.getConstantPool().getConstant(clazz.getSuperclassNameIndex())).getNameIndex())).getBytes();
+        JavaClass superClass = jvm.JVM.getJavaClass(superClassName);
+        int size = 0;
+        for (Field field : superClass.getFields()) {
+             size += getTypeSize(field.getType().getType());
+        }
+        return getSuperclassesFieldsSize(superClass) + size;
+    }
+
+    private void putfield() throws Exception {
         System.out.println("putfield");
         pc++;
         int constPoolIndex = code[pc] << 8 | (code[pc + 1] & 0xFF);
@@ -373,15 +425,14 @@ public class Frame {
         JavaClass clazz = jvm.JVM.getJavaClass(className);
         Field[] fields = clazz.getFields();
         Field field = null;
-        int i = 0;
-        //TODO Až budou mít objekty flagy a odkazy na třídy a pod., tak se změní offset pravděpodobně
-        int offset = 0;
-        for (; i < fields.length; i++) {
-            if (fields[i].getName().equals(fieldName)) {
-                field = fields[i];
+        //TODO Až budou mít objekty flagy, tak se změní offset pravděpodobně
+        int offset = jvm.Heap.OBJECT_HEAD_SIZE + getSuperclassesFieldsSize(clazz);
+        for (Field field1 : fields) {
+            if (field1.getName().equals(fieldName)) {
+                field = field1;
                 break;
             }
-            offset += fields[i].getType().getSize();
+            offset += getTypeSize(field1.getType().getType());
         }
         switch (field.getType().getType()) {
             case 10:
@@ -393,6 +444,15 @@ public class Frame {
             default:
                 throw new Exception("Neznámý typ při ukládání fieldu!");
         }
+        pc += 2;
+    }
+
+    private void sipush() {
+        System.out.println("sipush");
+        pc++;
+        short s = (short) (code[pc] << 8 | (code[pc + 1] & 0xFF));
+        int i = s;
+        operandStack.push(new IntValue(i));
         pc += 2;
     }
 
