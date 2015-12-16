@@ -160,8 +160,11 @@ public class Frame {
                 case 0x11:
                     sipush();
                     break;
+                case (byte) 0xbc:
+                    newarray();
+                    break;
                 default:
-                    throw new Exception("Neznámá instrukce " + code[pc]);
+                    throw new Exception("Neznámá instrukce " + jvm.JVM.unsignedToBytes(code[pc]));
             }
         } while (pc < code.length);
     }
@@ -213,6 +216,21 @@ public class Frame {
         ReferenceValue objRef = jvm.JVM.heap.allocateObject(classRef);
         operandStack.push(objRef);
         pc += 2;
+    }
+    
+    private void newarray () throws Exception {
+        System.out.println("newarray");
+        int sizeOfElement;
+        pc++;
+        byte atype = code[pc];
+        switch (atype) {
+            case 10: sizeOfElement = 4; break;
+            case 5: sizeOfElement = 2; break;
+            default: throw new Exception("Neznámý typ elementu při alokaci pole: " + atype);
+        }
+        ReferenceValue arrayRef = jvm.JVM.heap.allocateArray(((IntValue) operandStack.pop()).getValue(), sizeOfElement, atype);
+        operandStack.push(arrayRef);
+        pc++;
     }
 
     private void dup() {
@@ -390,6 +408,7 @@ public class Frame {
         switch (type) {
                  case 10: result = 4; break;//int
                  case 5: result = 2; break;//char
+                 case 13: result = 4; break;//array ref
                  default: throw new Exception("Neznámý typ při zjišťování velikosti typu: " + type);
              }
         return result;
@@ -440,6 +459,9 @@ public class Frame {
                 break;
             case 5:
                 jvm.JVM.heap.storeChar((CharValue) operandStack.pop(), (ReferenceValue) operandStack.pop(), offset);
+                break;
+            case 13:
+                jvm.JVM.heap.storeRef((ReferenceValue) operandStack.pop(), (ReferenceValue) operandStack.pop(), offset);
                 break;
             default:
                 throw new Exception("Neznámý typ při ukládání fieldu!");

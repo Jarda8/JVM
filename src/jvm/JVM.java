@@ -32,7 +32,6 @@ public class JVM {
         
         classTable.add((new ClassParser("initclasses/Object.class")).parse());
         classTable.add((new ClassParser("initclasses/String.class")).parse());
-
 //        heap.allocateObject(classTable.get("initclasses.StringObj"));
         
         //loading main class

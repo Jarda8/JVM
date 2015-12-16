@@ -17,6 +17,7 @@ public class Heap {
     private static final int HEAP_SIZE = (int) Math.pow(2, 20);
     public final ByteBuffer heap = ByteBuffer.allocate(HEAP_SIZE);
     public static final int OBJECT_HEAD_SIZE = 4;
+    public static final int ARRAY_HEAD_SIZE = 8;
     //Alokuje se za sebe a adekvátně se posune index prvního volného místa.
     public int firstFree = 0;
 
@@ -55,6 +56,7 @@ public class Heap {
     }
 
     private void allocateType(byte type) throws Exception {
+//        System.out.println(type);
         switch (type) {
             case 10:
                 firstFree += 4;
@@ -62,13 +64,18 @@ public class Heap {
             case 5:
                 firstFree += 2;
                 break;//char
+            case 13:
+                firstFree += 4;
+                break;//array ref
             default:
                 throw new Exception("Neznámý typ při alokaci fieldu");
         }
     }
 
-    public ReferenceValue alocateArray(int length, int sizeOfElement) {
+    public ReferenceValue allocateArray(int length, int sizeOfElement, int atype) {
         int ptr = firstFree;
+        heap.putInt(firstFree, atype);
+        firstFree += 4;
         heap.putInt(firstFree, length);
         firstFree += length * sizeOfElement + 4;
         return new ReferenceValue(ptr);
@@ -80,6 +87,10 @@ public class Heap {
 
     public void storeChar(CharValue v, ReferenceValue objRef, int offset) {
         heap.putChar(objRef.getValue() + offset, v.getValue());
+    }
+
+    public void storeRef(ReferenceValue v, ReferenceValue objRef, int offset) {
+        heap.putInt(objRef.getValue() + offset, v.getValue());
     }
 
     public void dumbHeap() {
