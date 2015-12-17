@@ -166,6 +166,9 @@ public class Frame {
                 case (byte) 0x4f:
                     iastore();
                     break;
+                case (byte) 0xb4:
+                    getfield();
+                    break;
                 default:
                     throw new Exception("Neznámá instrukce " + jvm.JVM.unsignedToBytes(code[pc]));
             }
@@ -442,6 +445,28 @@ public class Frame {
         return getSuperclassesFieldsSize(superClass) + size;
     }
 
+    private int getFieldOffset(JavaClass clazz, String fieldName) throws Exception {
+        int offset = 0;
+        Field[] fields = clazz.getFields();
+        Field field = null;
+        for (Field field1 : fields) {
+            if (field1.getName().equals(fieldName)) {
+                field = field1;
+                break;
+            }
+            offset += getTypeSize(field1.getType().getType());
+        }
+        if (field == null) {
+            String superClassName = ((ConstantUtf8) clazz.getConstantPool().getConstant(((ConstantClass) clazz.getConstantPool().getConstant(clazz.getSuperclassNameIndex())).getNameIndex())).getBytes();
+            JavaClass superClass = jvm.JVM.getJavaClass(superClassName);
+            offset = getFieldOffset(superClass, fieldName);
+        } else {
+            offset += getSuperclassesFieldsSize(clazz);
+        }
+        
+        return offset;
+    }
+
     private void putfield() throws Exception {
         System.out.println("putfield");
         pc++;
@@ -453,29 +478,23 @@ public class Frame {
 
         int nameAndTypeIndex = fieldRef.getNameAndTypeIndex();
         ConstantNameAndType nameAndType = (ConstantNameAndType) constantPool.getConstant(nameAndTypeIndex);
-        int nameIndex = nameAndType.getNameIndex();
-        String fieldName = ((ConstantUtf8) constantPool.getConstant(nameIndex)).getBytes();
+        String fieldName = nameAndType.getName(constantPool);
+        String fieldType = nameAndType.getSignature(constantPool);
 
         JavaClass clazz = jvm.JVM.getJavaClass(className);
-        Field[] fields = clazz.getFields();
-        Field field = null;
-        //TODO Až budou mít objekty flagy, tak se změní offset pravděpodobně
-        int offset = jvm.Heap.OBJECT_HEAD_SIZE + getSuperclassesFieldsSize(clazz);
-        for (Field field1 : fields) {
-            if (field1.getName().equals(fieldName)) {
-                field = field1;
-                break;
-            }
-            offset += getTypeSize(field1.getType().getType());
-        }
-        switch (field.getType().getType()) {
-            case 10:
+        int offset = jvm.Heap.OBJECT_HEAD_SIZE + getFieldOffset(clazz, fieldName);
+        
+        switch (fieldType.charAt(0)) {
+            case 'I':
                 jvm.JVM.heap.storeInt((IntValue) operandStack.pop(), (ReferenceValue) operandStack.pop(), offset);
                 break;
-            case 5:
+            case 'C':
                 jvm.JVM.heap.storeChar((CharValue) operandStack.pop(), (ReferenceValue) operandStack.pop(), offset);
                 break;
-            case 13:
+            case 'L':
+                jvm.JVM.heap.storeRef((ReferenceValue) operandStack.pop(), (ReferenceValue) operandStack.pop(), offset);
+                break;
+            case '[':
                 jvm.JVM.heap.storeRef((ReferenceValue) operandStack.pop(), (ReferenceValue) operandStack.pop(), offset);
                 break;
             default:
@@ -484,11 +503,43 @@ public class Frame {
         pc += 2;
     }
 
-    private void getfield() {
+    private void getfield() throws Exception {
         System.out.println("getfield");
         pc++;
         int constPoolIndex = code[pc] << 8 | (code[pc + 1] & 0xFF);
-        
+        ConstantFieldref fieldRef = (ConstantFieldref) constantPool.getConstant(constPoolIndex);
+        int classIndex = fieldRef.getClassIndex();
+        int classNameIndex = ((ConstantClass) constantPool.getConstant(classIndex)).getNameIndex();
+
+        String className = ((ConstantUtf8) constantPool.getConstant(classNameIndex)).getBytes();
+        int nameAndTypeIndex = fieldRef.getNameAndTypeIndex();
+        ConstantNameAndType nameAndType = (ConstantNameAndType) constantPool.getConstant(nameAndTypeIndex);
+//        int nameIndex = nameAndType.getNameIndex();
+//        String fieldName = ((ConstantUtf8) constantPool.getConstant(nameIndex)).getBytes();
+        String fieldName = nameAndType.getName(constantPool);
+        String fieldType = nameAndType.getSignature(constantPool);
+
+        JavaClass clazz = jvm.JVM.getJavaClass(className);
+        int offset = jvm.Heap.OBJECT_HEAD_SIZE + getFieldOffset(clazz, fieldName);
+
+        //typ budu brát z field descriptoru
+        switch (fieldType.charAt(0)) {
+            case 'I':
+                operandStack.push(jvm.JVM.heap.fetchInt((ReferenceValue) operandStack.pop(), offset));
+                break;
+            case 'C':
+                operandStack.push(jvm.JVM.heap.fetchChar((ReferenceValue) operandStack.pop(), offset));
+                break;
+            case 'L':
+                operandStack.push(jvm.JVM.heap.fetchRef((ReferenceValue) operandStack.pop(), offset));
+                break;
+            case '[':
+                operandStack.push(jvm.JVM.heap.fetchRef((ReferenceValue) operandStack.pop(), offset));
+                break;
+            default:
+                throw new Exception("Neznámý typ při ukládání fieldu!");
+        }
+        pc += 2;
     }
 
     private void sipush() {

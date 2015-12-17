@@ -80,6 +80,21 @@ public class Heap {
         return new ReferenceValue(ptr);
     }
 
+    public IntValue fetchInt(ReferenceValue objRef, int offset) {
+        int value = heap.getInt(objRef.getValue() + offset);
+        return new IntValue(value);
+    }
+
+    public CharValue fetchChar(ReferenceValue objRef, int offset) {
+        char value = heap.getChar(objRef.getValue() + offset);
+        return new CharValue(value);
+    }
+
+    public ReferenceValue fetchRef(ReferenceValue objRef, int offset) {
+        int value = heap.getInt(objRef.getValue() + offset);
+        return new ReferenceValue(value);
+    }
+
     public void storeInt(IntValue v, ReferenceValue objRef, int offset) {
         heap.putInt(objRef.getValue() + offset, v.getValue());
     }
