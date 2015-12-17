@@ -163,6 +163,9 @@ public class Frame {
                 case (byte) 0xbc:
                     newarray();
                     break;
+                case (byte) 0x4f:
+                    iastore();
+                    break;
                 default:
                     throw new Exception("Neznámá instrukce " + jvm.JVM.unsignedToBytes(code[pc]));
             }
@@ -217,16 +220,21 @@ public class Frame {
         operandStack.push(objRef);
         pc += 2;
     }
-    
-    private void newarray () throws Exception {
+
+    private void newarray() throws Exception {
         System.out.println("newarray");
         int sizeOfElement;
         pc++;
         byte atype = code[pc];
         switch (atype) {
-            case 10: sizeOfElement = 4; break;
-            case 5: sizeOfElement = 2; break;
-            default: throw new Exception("Neznámý typ elementu při alokaci pole: " + atype);
+            case 10:
+                sizeOfElement = 4;
+                break;
+            case 5:
+                sizeOfElement = 2;
+                break;
+            default:
+                throw new Exception("Neznámý typ elementu při alokaci pole: " + atype);
         }
         ReferenceValue arrayRef = jvm.JVM.heap.allocateArray(((IntValue) operandStack.pop()).getValue(), sizeOfElement, atype);
         operandStack.push(arrayRef);
@@ -402,15 +410,22 @@ public class Frame {
         pc++;
         localVariables[3] = operandStack.pop();
     }
-    
-    private int getTypeSize (byte type) throws Exception {
+
+    private int getTypeSize(byte type) throws Exception {
         int result;
         switch (type) {
-                 case 10: result = 4; break;//int
-                 case 5: result = 2; break;//char
-                 case 13: result = 4; break;//array ref
-                 default: throw new Exception("Neznámý typ při zjišťování velikosti typu: " + type);
-             }
+            case 10:
+                result = 4;
+                break;//int
+            case 5:
+                result = 2;
+                break;//char
+            case 13:
+                result = 4;
+                break;//array ref
+            default:
+                throw new Exception("Neznámý typ při zjišťování velikosti typu: " + type);
+        }
         return result;
     }
 
@@ -422,7 +437,7 @@ public class Frame {
         JavaClass superClass = jvm.JVM.getJavaClass(superClassName);
         int size = 0;
         for (Field field : superClass.getFields()) {
-             size += getTypeSize(field.getType().getType());
+            size += getTypeSize(field.getType().getType());
         }
         return getSuperclassesFieldsSize(superClass) + size;
     }
@@ -469,6 +484,13 @@ public class Frame {
         pc += 2;
     }
 
+    private void getfield() {
+        System.out.println("getfield");
+        pc++;
+        int constPoolIndex = code[pc] << 8 | (code[pc + 1] & 0xFF);
+        
+    }
+
     private void sipush() {
         System.out.println("sipush");
         pc++;
@@ -476,6 +498,15 @@ public class Frame {
         int i = s;
         operandStack.push(new IntValue(i));
         pc += 2;
+    }
+
+    private void iastore() throws Exception {
+        System.out.println("iastore");
+        pc++;
+        IntValue value = (IntValue) operandStack.pop();
+        IntValue index = (IntValue) operandStack.pop();
+        ReferenceValue arrayRef = (ReferenceValue) operandStack.pop();
+        jvm.JVM.heap.storeIntToArray(value, arrayRef, index.getValue());
     }
 
 }

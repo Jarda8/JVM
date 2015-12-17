@@ -1,6 +1,5 @@
 package jvm;
 
-import java.io.IOException;
 import java.nio.ByteBuffer;
 import jvm.values.*;
 import org.apache.bcel.classfile.ConstantClass;
@@ -91,6 +90,16 @@ public class Heap {
 
     public void storeRef(ReferenceValue v, ReferenceValue objRef, int offset) {
         heap.putInt(objRef.getValue() + offset, v.getValue());
+    }
+    
+    public void storeIntToArray (IntValue v, ReferenceValue arrayRef, int index) throws Exception {
+        int length = heap.getInt(arrayRef.getValue() + 4);
+        if (index >= length) {
+            throw new Exception("Index je větší než velikost pole!");
+        } else if (index < 0) {
+            throw new Exception("Index je záporný!");
+        }
+        heap.putInt(arrayRef.getValue() + ARRAY_HEAD_SIZE + index * 4, v.getValue());
     }
 
     public void dumbHeap() {
