@@ -107,20 +107,36 @@ public class Heap {
         heap.putInt(objRef.getValue() + offset, v.getValue());
     }
     
-    public void storeIntToArray (IntValue v, ReferenceValue arrayRef, int index) throws Exception {
+    public void storeIntToArray (IntValue v, ReferenceValue arrayRef, IntValue index) throws Exception {
         int length = heap.getInt(arrayRef.getValue() + 4);
-        if (index >= length) {
+        if (index.getValue() >= length) {
             throw new Exception("Index je větší než velikost pole!");
-        } else if (index < 0) {
+        } else if (index.getValue() < 0) {
             throw new Exception("Index je záporný!");
         }
-        heap.putInt(arrayRef.getValue() + ARRAY_HEAD_SIZE + index * 4, v.getValue());
+        heap.putInt(arrayRef.getValue() + ARRAY_HEAD_SIZE + index.getValue() * 4, v.getValue());
+    }
+    
+    public IntValue fetchIntFromArray (ReferenceValue arrayRef, IntValue index) throws Exception {
+        int length = heap.getInt(arrayRef.getValue() + 4);
+        int value;
+        if (index.getValue() >= length) {
+            throw new Exception("Index je větší než velikost pole!");
+        } else if (index.getValue() < 0) {
+            throw new Exception("Index je záporný!");
+        }
+        value = heap.getInt(arrayRef.getValue() + ARRAY_HEAD_SIZE + index.getValue() * 4);
+        return new IntValue(value);
     }
 
     public void dumbHeap() {
-        System.out.println("heap dump:");
+        System.out.println("\nheap dump:");
         for (int i = 0; i < firstFree; i++) {
-            System.out.println(jvm.JVM.unsignedToBytes(heap.get(i)));
+            System.out.print(jvm.JVM.unsignedToBytes(heap.get(i)));
+            if ((i + 1) % 4 == 0) {
+                System.out.print(" ");
+            }
         }
+        System.out.println("\n\n\n\n\n\n");
     }
 }

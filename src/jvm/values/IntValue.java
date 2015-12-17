@@ -19,4 +19,20 @@ public class IntValue extends Value{
         this.value = value;
     }
     
+    public IntValue add(IntValue x) {
+        return new IntValue(value + x.getValue());
+    }
+    
+    public IntValue sub(IntValue x) {
+        return new IntValue(value - x.getValue());
+    }
+    
+    public IntValue mul(IntValue x) {
+        return new IntValue(value * x.getValue());
+    }
+    
+    public IntValue div(IntValue x) {
+        return new IntValue(value / x.getValue());
+    }
+    
 }

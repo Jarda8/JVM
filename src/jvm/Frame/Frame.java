@@ -169,6 +169,21 @@ public class Frame {
                 case (byte) 0xb4:
                     getfield();
                     break;
+                case (byte) 0x2e:
+                    iaload();
+                    break;
+                case (byte) 0x60:
+                    iadd();
+                    break;
+                case (byte) 0x64:
+                    isub();
+                    break;
+                case (byte) 0x68:
+                    imul();
+                    break;
+                case (byte) 0x6c:
+                    idiv();
+                    break;
                 default:
                     throw new Exception("Neznámá instrukce " + jvm.JVM.unsignedToBytes(code[pc]));
             }
@@ -557,7 +572,45 @@ public class Frame {
         IntValue value = (IntValue) operandStack.pop();
         IntValue index = (IntValue) operandStack.pop();
         ReferenceValue arrayRef = (ReferenceValue) operandStack.pop();
-        jvm.JVM.heap.storeIntToArray(value, arrayRef, index.getValue());
+        jvm.JVM.heap.storeIntToArray(value, arrayRef, index);
+    }
+    
+    private void iaload() throws Exception {
+        System.out.println("iaload");
+        pc++;
+        IntValue index = (IntValue) operandStack.pop();
+        ReferenceValue arrayRef = (ReferenceValue) operandStack.pop();
+        operandStack.push(jvm.JVM.heap.fetchIntFromArray(arrayRef, index));
+    }
+    
+    private void iadd() {
+        System.out.println("iadd");
+        pc++;
+        IntValue result = ((IntValue) operandStack.pop()).add((IntValue) operandStack.pop());
+        operandStack.push(result);
+    }
+    
+    private void isub() {
+        System.out.println("isub");
+        pc++;
+        IntValue x = (IntValue) operandStack.pop();
+        IntValue result = ((IntValue) operandStack.pop()).sub(x);
+        operandStack.push(result);
+    }
+    
+    private void imul() {
+        System.out.println("imul");
+        pc++;
+        IntValue result = ((IntValue) operandStack.pop()).mul((IntValue) operandStack.pop());
+        operandStack.push(result);
+    }
+    
+    private void idiv() {
+        System.out.println("idiv");
+        pc++;
+        IntValue x = (IntValue) operandStack.pop();
+        IntValue result = ((IntValue) operandStack.pop()).div(x);
+        operandStack.push(result);
     }
 
 }
