@@ -1,6 +1,5 @@
 package jvm.frame;
 
-import java.io.IOException;
 import jvm.values.Value;
 import java.util.ArrayDeque;
 import java.util.Deque;
@@ -184,6 +183,48 @@ public class Frame {
                 case (byte) 0x6c:
                     idiv();
                     break;
+                case (byte) 0xa7:
+                    gotoo();
+                    break;
+                case (byte) 0x99:
+                    ifeq();
+                    break;
+                case (byte) 0x9a:
+                    ifne();
+                    break;
+                case (byte) 0x9b:
+                    iflt();
+                    break;
+                case (byte) 0x9c:
+                    ifge();
+                    break;
+                case (byte) 0x9d:
+                    ifgt();
+                    break;
+                case (byte) 0x9e:
+                    ifle();
+                    break;
+                case (byte) 0x9f:
+                    if_icmpeq();
+                    break;
+                case (byte) 0xa0:
+                    if_icmpne();
+                    break;
+                case (byte) 0xa1:
+                    if_icmplt();
+                    break;
+                case (byte) 0xa2:
+                    if_icmpge();
+                    break;
+                case (byte) 0xa3:
+                    if_icmpgt();
+                    break;
+                case (byte) 0xa4:
+                    if_icmple();
+                    break;
+                case (byte) 0x84:
+                    iinc();
+                    break;
                 default:
                     throw new Exception("Neznámá instrukce " + jvm.JVM.unsignedToBytes(code[pc]));
             }
@@ -245,11 +286,14 @@ public class Frame {
         pc++;
         byte atype = code[pc];
         switch (atype) {
-            case 10:
+            case 10://int
                 sizeOfElement = 4;
                 break;
-            case 5:
+            case 5://char
                 sizeOfElement = 2;
+                break;
+            case 4://boolean (s booleanem se pracuje jako s intem)
+                sizeOfElement = 4;
                 break;
             default:
                 throw new Exception("Neznámý typ elementu při alokaci pole: " + atype);
@@ -336,9 +380,9 @@ public class Frame {
         //Třída se bude muset zjistit z instance na haldě. Index na haldu je v localVariables[0] (pokud jde o instanční metodu) a index do classTable je na prvním místě v instanci.
         //Tohle se možná nemusí řešit v invokespecial, ale v invokevirtual nebo jak se jmenuje ta instrukce.
         JavaClass clazz = jvm.JVM.getJavaClass(className);
-        for (int i = 0; i < clazz.getMethods().length; i++) {
-            if (clazz.getMethods()[i].getName().equals(methodName)) {
-                m = clazz.getMethods()[i];
+        for (Method method : clazz.getMethods()) {
+            if (method.getName().equals(methodName)) {
+                m = method;
                 break;
             }
         }
@@ -611,6 +655,153 @@ public class Frame {
         IntValue x = (IntValue) operandStack.pop();
         IntValue result = ((IntValue) operandStack.pop()).div(x);
         operandStack.push(result);
+    }
+    
+    private void gotoo() {
+        System.out.println("goto");
+        short offset = (short) (code[pc + 1] << 8 | (code[pc + 2] & 0xFF));
+        pc += offset;
+    }
+    
+    private void ifeq() {
+        System.out.println("ifeq");
+        if (((IntValue) operandStack.pop()).getValue() == 0) {
+            short offset = (short) (code[pc + 1] << 8 | (code[pc + 2] & 0xFF));
+            pc += offset;
+        } else {
+            pc += 3;
+        }
+    }
+    
+    private void ifne() {
+        System.out.println("ifne");
+        if (((IntValue) operandStack.pop()).getValue() != 0) {
+            short offset = (short) (code[pc + 1] << 8 | (code[pc + 2] & 0xFF));
+            pc += offset;
+        } else {
+            pc += 3;
+        }
+    }
+    
+    private void iflt() {
+        System.out.println("iflt");
+        if (((IntValue) operandStack.pop()).getValue() < 0) {
+            short offset = (short) (code[pc + 1] << 8 | (code[pc + 2] & 0xFF));
+            pc += offset;
+        } else {
+            pc += 3;
+        }
+    }
+    
+    private void ifgt() {
+        System.out.println("ifgt");
+        if (((IntValue) operandStack.pop()).getValue() > 0) {
+            short offset = (short) (code[pc + 1] << 8 | (code[pc + 2] & 0xFF));
+            pc += offset;
+        } else {
+            pc += 3;
+        }
+    }
+    
+    private void ifle() {
+        System.out.println("ifle");
+        if (((IntValue) operandStack.pop()).getValue() <= 0) {
+            short offset = (short) (code[pc + 1] << 8 | (code[pc + 2] & 0xFF));
+            pc += offset;
+        } else {
+            pc += 3;
+        }
+    }
+    
+    private void ifge() {
+        System.out.println("ifge");
+        if (((IntValue) operandStack.pop()).getValue() >= 0) {
+            short offset = (short) (code[pc + 1] << 8 | (code[pc + 2] & 0xFF));
+            pc += offset;
+        } else {
+            pc += 3;
+        }
+    }
+    
+    private void if_icmpeq() {
+        System.out.println("if_icmpeq");
+        IntValue value2 = (IntValue) operandStack.pop();
+        IntValue value1 = (IntValue) operandStack.pop();
+        if (value1.getValue() == value2.getValue()) {
+            short offset = (short) (code[pc + 1] << 8 | (code[pc + 2] & 0xFF));
+            pc += offset;
+        } else {
+            pc += 3;
+        }
+    }
+    
+    private void if_icmpne() {
+        System.out.println("if_icmpne");
+        IntValue value2 = (IntValue) operandStack.pop();
+        IntValue value1 = (IntValue) operandStack.pop();
+        if (value1.getValue() != value2.getValue()) {
+            short offset = (short) (code[pc + 1] << 8 | (code[pc + 2] & 0xFF));
+            pc += offset;
+        } else {
+            pc += 3;
+        }
+    }
+    
+    private void if_icmplt() {
+        System.out.println("if_icmplt");
+        IntValue value2 = (IntValue) operandStack.pop();
+        IntValue value1 = (IntValue) operandStack.pop();
+        if (value1.getValue() < value2.getValue()) {
+            short offset = (short) (code[pc + 1] << 8 | (code[pc + 2] & 0xFF));
+            pc += offset;
+        } else {
+            pc += 3;
+        }
+    }
+    
+    private void if_icmpge() {
+        System.out.println("if_icmpge");
+        IntValue value2 = (IntValue) operandStack.pop();
+        IntValue value1 = (IntValue) operandStack.pop();
+        if (value1.getValue() >= value2.getValue()) {
+            short offset = (short) (code[pc + 1] << 8 | (code[pc + 2] & 0xFF));
+            pc += offset;
+        } else {
+            pc += 3;
+        }
+    }
+    
+    private void if_icmpgt() {
+        System.out.println("if_icmpgt");
+        IntValue value2 = (IntValue) operandStack.pop();
+        IntValue value1 = (IntValue) operandStack.pop();
+        if (value1.getValue() > value2.getValue()) {
+            short offset = (short) (code[pc + 1] << 8 | (code[pc + 2] & 0xFF));
+            pc += offset;
+        } else {
+            pc += 3;
+        }
+    }
+    
+    private void if_icmple() {
+        System.out.println("if_icmple");
+        IntValue value2 = (IntValue) operandStack.pop();
+        IntValue value1 = (IntValue) operandStack.pop();
+        if (value1.getValue() <= value2.getValue()) {
+            short offset = (short) (code[pc + 1] << 8 | (code[pc + 2] & 0xFF));
+            pc += offset;
+        } else {
+            pc += 3;
+        }
+    }
+    
+    private void iinc() {
+        System.out.println("iinc");
+        pc++;
+        short index = (short) code[pc];
+        IntValue constant = new IntValue(code[pc + 1]);
+        ((IntValue) localVariables[index]).inc(constant);
+        pc += 2;
     }
 
 }

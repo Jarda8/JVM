@@ -35,4 +35,8 @@ public class IntValue extends Value{
         return new IntValue(value / x.getValue());
     }
     
+    public void inc(IntValue v) {
+        value += v.getValue();
+    }
+    
 }
