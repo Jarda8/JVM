@@ -148,6 +148,30 @@ public class Heap {
         value = heap.getInt(arrayRef.getValue() + ARRAY_HEAD_SIZE + index.getValue() * 4);
         return new IntValue(value);
     }
+    
+    public CharValue fetchCharFromArray (ReferenceValue arrayRef, IntValue index) throws Exception {
+        int length = heap.getInt(arrayRef.getValue() + 4);
+        char value;
+        if (index.getValue() >= length) {
+            throw new Exception("Index je větší než velikost pole!");
+        } else if (index.getValue() < 0) {
+            throw new Exception("Index je záporný!");
+        }
+        value = heap.getChar(arrayRef.getValue() + ARRAY_HEAD_SIZE + index.getValue() * 2);
+        return new CharValue(value);
+    }
+    
+    public ReferenceValue fetchRefFromArray (ReferenceValue arrayRef, IntValue index) throws Exception {
+        int length = heap.getInt(arrayRef.getValue() + 4);
+        int value;
+        if (index.getValue() >= length) {
+            throw new Exception("Index je větší než velikost pole!");
+        } else if (index.getValue() < 0) {
+            throw new Exception("Index je záporný!");
+        }
+        value = heap.getInt(arrayRef.getValue() + ARRAY_HEAD_SIZE + index.getValue() * 4);
+        return new ReferenceValue(value);
+    }
 
     public void dumbHeap() {
         System.out.println("\nheap dump:");

@@ -4,6 +4,7 @@ import java.io.IOException;
 import jvm.values.Value;
 import java.util.ArrayDeque;
 import java.util.Deque;
+import jvm.JVM;
 import static jvm.JVM.unsignedToBytes;
 import jvm.values.*;
 import org.apache.bcel.classfile.*;
@@ -232,8 +233,11 @@ public class Frame {
                 case (byte) 0xbd:
                     anewarray();
                     break;
+                case (byte) 0x32:
+                    aaload();
+                    break;
                 default:
-                    throw new Exception("Neznámá instrukce " + jvm.JVM.unsignedToBytes(code[pc]));
+                    throw new Exception("Neznámá instrukce " + JVM.unsignedToBytes(code[pc]));
             }
         } while (pc < code.length);
     }
@@ -281,8 +285,8 @@ public class Frame {
         int constPoolIndex = code[pc] << 8 | (code[pc + 1] & 0xFF);
         int nameIndex = ((ConstantClass) constantPool.getConstant(constPoolIndex)).getNameIndex();
         String className = ((ConstantUtf8) constantPool.getConstant(nameIndex)).getBytes();
-        ReferenceValue classRef = jvm.JVM.getJavaClassRef(className);
-        ReferenceValue objRef = jvm.JVM.heap.allocateObject(classRef);
+        ReferenceValue classRef = JVM.getJavaClassRef(className);
+        ReferenceValue objRef = JVM.heap.allocateObject(classRef);
         operandStack.push(objRef);
         pc += 2;
     }
@@ -305,7 +309,7 @@ public class Frame {
             default:
                 throw new Exception("Neznámý typ elementu při alokaci pole: " + atype);
         }
-        ReferenceValue arrayRef = jvm.JVM.heap.allocateArray(((IntValue) operandStack.pop()).getValue(), sizeOfElement, atype);
+        ReferenceValue arrayRef = JVM.heap.allocateArray(((IntValue) operandStack.pop()).getValue(), sizeOfElement, atype);
         operandStack.push(arrayRef);
         pc++;
     }
@@ -315,10 +319,10 @@ public class Frame {
         pc++;
         int constPoolIndex = code[pc] << 8 | (code[pc + 1] & 0xFF);int nameIndex = ((ConstantClass) constantPool.getConstant(constPoolIndex)).getNameIndex();
         String className = ((ConstantUtf8) constantPool.getConstant(nameIndex)).getBytes();
-        ReferenceValue classRef = jvm.JVM.getJavaClassRef(className);
+        ReferenceValue classRef = JVM.getJavaClassRef(className);
         int sizeOfElement = 4;
         //Možná by se mělo pole referencí alokovat jinak. Jako atype by byla 14 (nebo 13 u vícerozměrného pole), potom reference na třídu Objektu, pak délka a pak samotné reference.
-        ReferenceValue arrayRef = jvm.JVM.heap.allocateArray(((IntValue) operandStack.pop()).getValue(), sizeOfElement, classRef.getValue());
+        ReferenceValue arrayRef = JVM.heap.allocateArray(((IntValue) operandStack.pop()).getValue(), sizeOfElement, classRef.getValue());
         operandStack.push(arrayRef);
         pc += 2;
     }
@@ -399,7 +403,7 @@ public class Frame {
         //TODO Takhle patrně zjistím třídu proměnné, na které byla metoda zavolána, nikoliv třídu konkrétní instance (Může to být podtřída.).
         //Třída se bude muset zjistit z instance na haldě. Index na haldu je v localVariables[0] (pokud jde o instanční metodu) a index do classTable je na prvním místě v instanci.
         //Tohle se možná nemusí řešit v invokespecial, ale v invokevirtual nebo jak se jmenuje ta instrukce.
-        JavaClass clazz = jvm.JVM.getJavaClass(className);
+        JavaClass clazz = JVM.getJavaClass(className);
         for (Method method : clazz.getMethods()) {
             if (method.getName().equals(methodName)) {
                 m = method;
@@ -416,7 +420,7 @@ public class Frame {
         }
 
 //        System.out.println("Volá se metoda: " + m.getName());
-        jvm.JVM.callMethod(m, arguments, (ReferenceValue) operandStack.pop(), this);
+        JVM.callMethod(m, arguments, (ReferenceValue) operandStack.pop(), this);
         System.out.println("Doběhla metoda " + m.getName());
         pc += 2;
     }
@@ -516,7 +520,7 @@ public class Frame {
             return 0;
         }
         String superClassName = ((ConstantUtf8) clazz.getConstantPool().getConstant(((ConstantClass) clazz.getConstantPool().getConstant(clazz.getSuperclassNameIndex())).getNameIndex())).getBytes();
-        JavaClass superClass = jvm.JVM.getJavaClass(superClassName);
+        JavaClass superClass = JVM.getJavaClass(superClassName);
         int size = 0;
         for (Field field : superClass.getFields()) {
             size += getTypeSize(field.getType().getType());
@@ -537,7 +541,7 @@ public class Frame {
         }
         if (field == null) {
             String superClassName = ((ConstantUtf8) clazz.getConstantPool().getConstant(((ConstantClass) clazz.getConstantPool().getConstant(clazz.getSuperclassNameIndex())).getNameIndex())).getBytes();
-            JavaClass superClass = jvm.JVM.getJavaClass(superClassName);
+            JavaClass superClass = JVM.getJavaClass(superClassName);
             offset = getFieldOffset(superClass, fieldName);
         } else {
             offset += getSuperclassesFieldsSize(clazz);
@@ -560,21 +564,21 @@ public class Frame {
         String fieldName = nameAndType.getName(constantPool);
         String fieldType = nameAndType.getSignature(constantPool);
 
-        JavaClass clazz = jvm.JVM.getJavaClass(className);
+        JavaClass clazz = JVM.getJavaClass(className);
         int offset = jvm.Heap.OBJECT_HEAD_SIZE + getFieldOffset(clazz, fieldName);
         
         switch (fieldType.charAt(0)) {
             case 'I':
-                jvm.JVM.heap.storeInt((IntValue) operandStack.pop(), (ReferenceValue) operandStack.pop(), offset);
+                JVM.heap.storeInt((IntValue) operandStack.pop(), (ReferenceValue) operandStack.pop(), offset);
                 break;
             case 'C':
-                jvm.JVM.heap.storeChar((CharValue) operandStack.pop(), (ReferenceValue) operandStack.pop(), offset);
+                JVM.heap.storeChar((CharValue) operandStack.pop(), (ReferenceValue) operandStack.pop(), offset);
                 break;
             case 'L':
-                jvm.JVM.heap.storeRef((ReferenceValue) operandStack.pop(), (ReferenceValue) operandStack.pop(), offset);
+                JVM.heap.storeRef((ReferenceValue) operandStack.pop(), (ReferenceValue) operandStack.pop(), offset);
                 break;
             case '[':
-                jvm.JVM.heap.storeRef((ReferenceValue) operandStack.pop(), (ReferenceValue) operandStack.pop(), offset);
+                JVM.heap.storeRef((ReferenceValue) operandStack.pop(), (ReferenceValue) operandStack.pop(), offset);
                 break;
             default:
                 throw new Exception("Neznámý typ při ukládání fieldu!");
@@ -598,22 +602,22 @@ public class Frame {
         String fieldName = nameAndType.getName(constantPool);
         String fieldType = nameAndType.getSignature(constantPool);
 
-        JavaClass clazz = jvm.JVM.getJavaClass(className);
+        JavaClass clazz = JVM.getJavaClass(className);
         int offset = jvm.Heap.OBJECT_HEAD_SIZE + getFieldOffset(clazz, fieldName);
 
         //typ budu brát z field descriptoru
         switch (fieldType.charAt(0)) {
             case 'I':
-                operandStack.push(jvm.JVM.heap.fetchInt((ReferenceValue) operandStack.pop(), offset));
+                operandStack.push(JVM.heap.fetchInt((ReferenceValue) operandStack.pop(), offset));
                 break;
             case 'C':
-                operandStack.push(jvm.JVM.heap.fetchChar((ReferenceValue) operandStack.pop(), offset));
+                operandStack.push(JVM.heap.fetchChar((ReferenceValue) operandStack.pop(), offset));
                 break;
             case 'L':
-                operandStack.push(jvm.JVM.heap.fetchRef((ReferenceValue) operandStack.pop(), offset));
+                operandStack.push(JVM.heap.fetchRef((ReferenceValue) operandStack.pop(), offset));
                 break;
             case '[':
-                operandStack.push(jvm.JVM.heap.fetchRef((ReferenceValue) operandStack.pop(), offset));
+                operandStack.push(JVM.heap.fetchRef((ReferenceValue) operandStack.pop(), offset));
                 break;
             default:
                 throw new Exception("Neznámý typ při ukládání fieldu!");
@@ -636,7 +640,7 @@ public class Frame {
         IntValue value = (IntValue) operandStack.pop();
         IntValue index = (IntValue) operandStack.pop();
         ReferenceValue arrayRef = (ReferenceValue) operandStack.pop();
-        jvm.JVM.heap.storeIntToArray(value, arrayRef, index);
+        JVM.heap.storeIntToArray(value, arrayRef, index);
     }
     
     private void aastore() throws Exception {
@@ -645,7 +649,16 @@ public class Frame {
         ReferenceValue value = (ReferenceValue) operandStack.pop();
         IntValue index = (IntValue) operandStack.pop();
         ReferenceValue arrayRef = (ReferenceValue) operandStack.pop();
-        jvm.JVM.heap.storeRefToArray(value, arrayRef, index);
+        JVM.heap.storeRefToArray(value, arrayRef, index);
+    }
+    
+    private void aaload() throws Exception {
+        System.out.println("aaload");
+        pc++;
+        IntValue index = (IntValue) operandStack.pop();
+        ReferenceValue arrayRef = (ReferenceValue) operandStack.pop();
+        ReferenceValue refVal = JVM.heap.fetchRefFromArray(arrayRef, index);
+        operandStack.push(refVal);
     }
     
     private void iaload() throws Exception {
@@ -653,7 +666,7 @@ public class Frame {
         pc++;
         IntValue index = (IntValue) operandStack.pop();
         ReferenceValue arrayRef = (ReferenceValue) operandStack.pop();
-        operandStack.push(jvm.JVM.heap.fetchIntFromArray(arrayRef, index));
+        operandStack.push(JVM.heap.fetchIntFromArray(arrayRef, index));
     }
     
     private void iadd() {
