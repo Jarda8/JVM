@@ -117,6 +117,26 @@ public class Heap {
         heap.putInt(arrayRef.getValue() + ARRAY_HEAD_SIZE + index.getValue() * 4, v.getValue());
     }
     
+    public void storeCharToArray (CharValue v, ReferenceValue arrayRef, IntValue index) throws Exception {
+        int length = heap.getInt(arrayRef.getValue() + 4);
+        if (index.getValue() >= length) {
+            throw new Exception("Index je větší než velikost pole!");
+        } else if (index.getValue() < 0) {
+            throw new Exception("Index je záporný!");
+        }
+        heap.putChar(arrayRef.getValue() + ARRAY_HEAD_SIZE + index.getValue() * 2, v.getValue());
+    }
+    
+    public void storeRefToArray (ReferenceValue v, ReferenceValue arrayRef, IntValue index) throws Exception {
+        int length = heap.getInt(arrayRef.getValue() + 4);
+        if (index.getValue() >= length) {
+            throw new Exception("Index je větší než velikost pole!");
+        } else if (index.getValue() < 0) {
+            throw new Exception("Index je záporný!");
+        }
+        heap.putInt(arrayRef.getValue() + ARRAY_HEAD_SIZE + index.getValue() * 4, v.getValue());
+    }
+    
     public IntValue fetchIntFromArray (ReferenceValue arrayRef, IntValue index) throws Exception {
         int length = heap.getInt(arrayRef.getValue() + 4);
         int value;

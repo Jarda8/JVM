@@ -1,5 +1,6 @@
 package jvm.frame;
 
+import java.io.IOException;
 import jvm.values.Value;
 import java.util.ArrayDeque;
 import java.util.Deque;
@@ -165,6 +166,9 @@ public class Frame {
                 case (byte) 0x4f:
                     iastore();
                     break;
+                case (byte) 0x53:
+                    aastore();
+                    break;
                 case (byte) 0xb4:
                     getfield();
                     break;
@@ -224,6 +228,9 @@ public class Frame {
                     break;
                 case (byte) 0x84:
                     iinc();
+                    break;
+                case (byte) 0xbd:
+                    anewarray();
                     break;
                 default:
                     throw new Exception("Neznámá instrukce " + jvm.JVM.unsignedToBytes(code[pc]));
@@ -301,6 +308,19 @@ public class Frame {
         ReferenceValue arrayRef = jvm.JVM.heap.allocateArray(((IntValue) operandStack.pop()).getValue(), sizeOfElement, atype);
         operandStack.push(arrayRef);
         pc++;
+    }
+    
+    private void anewarray() throws IOException {
+        System.out.println("anewarray");
+        pc++;
+        int constPoolIndex = code[pc] << 8 | (code[pc + 1] & 0xFF);int nameIndex = ((ConstantClass) constantPool.getConstant(constPoolIndex)).getNameIndex();
+        String className = ((ConstantUtf8) constantPool.getConstant(nameIndex)).getBytes();
+        ReferenceValue classRef = jvm.JVM.getJavaClassRef(className);
+        int sizeOfElement = 4;
+        //Možná by se mělo pole referencí alokovat jinak. Jako atype by byla 14 (nebo 13 u vícerozměrného pole), potom reference na třídu Objektu, pak délka a pak samotné reference.
+        ReferenceValue arrayRef = jvm.JVM.heap.allocateArray(((IntValue) operandStack.pop()).getValue(), sizeOfElement, classRef.getValue());
+        operandStack.push(arrayRef);
+        pc += 2;
     }
 
     private void dup() {
@@ -617,6 +637,15 @@ public class Frame {
         IntValue index = (IntValue) operandStack.pop();
         ReferenceValue arrayRef = (ReferenceValue) operandStack.pop();
         jvm.JVM.heap.storeIntToArray(value, arrayRef, index);
+    }
+    
+    private void aastore() throws Exception {
+        System.out.println("aastore");
+        pc++;
+        ReferenceValue value = (ReferenceValue) operandStack.pop();
+        IntValue index = (IntValue) operandStack.pop();
+        ReferenceValue arrayRef = (ReferenceValue) operandStack.pop();
+        jvm.JVM.heap.storeRefToArray(value, arrayRef, index);
     }
     
     private void iaload() throws Exception {

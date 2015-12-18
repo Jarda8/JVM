@@ -4,13 +4,10 @@ import java.io.*;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Deque;
-import java.util.HashMap;
+//import java.util.HashMap;
 import java.util.List;
-import java.util.Vector;
 import jvm.frame.Frame;
-import jvm.values.IntValue;
-import jvm.values.ReferenceValue;
-import jvm.values.Value;
+import jvm.values.*;
 import org.apache.bcel.classfile.ClassParser;
 import org.apache.bcel.classfile.JavaClass;
 import org.apache.bcel.classfile.Method;
@@ -23,29 +20,49 @@ public class JVM {
 //    static final HashMap<String, JavaClass> classTable = new HashMap<>();
     static final List<JavaClass> classTable = new ArrayList<>();
     //přidat native methods stack
-    
+
     public static void main(String[] args) throws Exception {
 
         //loading core classes
 //        classTable.put("initclasses/Sring", (new ClassParser("initclasses/String.class")).parse());
 //        classTable.put("initclasses/Object", (new ClassParser("initclasses/Object.class")).parse());
-        
         classTable.add((new ClassParser("initclasses/Object.class")).parse());
         classTable.add((new ClassParser("initclasses/String.class")).parse());
 //        heap.allocateObject(classTable.get("initclasses.StringObj"));
-        
+
         //loading main class
         JavaClass mainClass = (new ClassParser(args[0])).parse();
 //        classTable.put(mainClass.getClassName(), mainClass);
         classTable.add(mainClass);
+        
+        ReferenceValue args2;//pole objektů typu initclasses.String
+        ReferenceValue stringClassRef;
+        if (args.length > 1) {
+            stringClassRef = getJavaClassRef("initclasses/String");
+            args2 = heap.allocateArray(args.length - 1, 4, stringClassRef.getValue());
+            for (int i = 1; i < args.length; i++) {
+                ReferenceValue stringRef = heap.allocateObject(stringClassRef);
+                int stringLength = args[i].length();
+                heap.storeInt(new IntValue(stringLength), stringRef, Heap.OBJECT_HEAD_SIZE);
+                ReferenceValue charArrayRef = heap.allocateArray(args[i].length(), 2, 5);
+                for (int j = 0; j < stringLength; j++) {
+                    heap.storeCharToArray(new CharValue(args[i].charAt(j)), charArrayRef, new IntValue(j));
+                }
+                heap.storeRef(charArrayRef, stringRef, Heap.OBJECT_HEAD_SIZE + 4);
+                heap.storeRefToArray(stringRef, args2, new IntValue(i - 1));
+            }
+        } else if(args.length == 1) {
+            System.out.println("Nezadal jste název programu nebo vstupního souboru!");
+            return;
+        } else {
+            System.out.println("Nezadal jste název programu a vstupního souboru!");
+            return;
+        }
+        
+        Value[] mainArgs = new Value[1];
+        mainArgs[0] = args2;
 
-//        for (int i = 0; i < mainClass.getMethods()[1].getCode().getCode().length; i++) {
-//            System.out.println(unsignedToBytes(mainClass.getMethods()[1].getCode().getCode()[i]));
-//        }
-
-        //vytvoří se frame pro main funkci, hodí se na stack a spustí se
-        //argumenty z příkazové řádky je třeba dát do našeho stringu
-        frameStack.push(new Frame(mainClass.getMethods()[1], null, null, null));
+        frameStack.push(new Frame(mainClass.getMethods()[1], mainArgs, null, null));
         frameStack.peek().start();
         //program doběhl
         //uklidim stack
@@ -55,11 +72,9 @@ public class JVM {
 
 //        System.out.println(classTable.get("testapp.TestApp").getMethods()[0]);
 //        System.out.println(((ConstantInteger)classTable.get("testapp.TestApp").getConstantPool().getConstant(2)).getBytes());
-
     }
 
     //TODO predělat všechno na StringValue nebo ReferenceValue, až bude 
-
     private static Value[] parseMainArguments(String[] args) {
         Value[] valArgs;
         if (args.length <= 1) {
@@ -73,8 +88,8 @@ public class JVM {
         }
         return valArgs;
     }
-    
-    public static JavaClass getJavaClass (String className) throws IOException {
+
+    public static JavaClass getJavaClass(String className) throws IOException {
 //        JavaClass result = classTable.get(className);
         if (className.equals("java/lang/Object")) {
             className = "initclasses/Object";
@@ -94,8 +109,8 @@ public class JVM {
         }
         return result;
     }
-    
-    public static ReferenceValue getJavaClassRef (String className) throws IOException {
+
+    public static ReferenceValue getJavaClassRef(String className) throws IOException {
         if (className.equals("java/lang/Object")) {
             className = "initclasses/Object";
         }
@@ -115,11 +130,11 @@ public class JVM {
         }
         return new ReferenceValue(result);
     }
-    
-    public static JavaClass getJavaClassByIndex (ReferenceValue classRef) {
+
+    public static JavaClass getJavaClassByIndex(ReferenceValue classRef) {
         return classTable.get(classRef.getValue());
     }
-    
+
     public static void callMethod(Method method, Value[] arguments, ReferenceValue thisHeapIndex, Frame invoker) throws Exception {
         frameStack.push(new Frame(method, arguments, thisHeapIndex, invoker));
         frameStack.peek().start();
@@ -127,7 +142,6 @@ public class JVM {
     }
 
     //pomocná funkce na výpis unsigned bytů
-
     public static int unsignedToBytes(byte b) {
         return b & 0xFF;
     }
