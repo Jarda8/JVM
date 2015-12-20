@@ -35,7 +35,7 @@ public class Frame {
         this.constantPool = method.getConstantPool();
         this.code = method.getCode().getCode();
         this.invoker = invoker;
-
+        
         Type[] argumentTypes = method.getArgumentTypes();
         int i = 0, j = 0;
         if (!method.isStatic()) {
@@ -110,6 +110,12 @@ public class Frame {
                 case (byte) 0xb1:
                     ret();
                     break;
+                case (byte) 0xac: //udelat kontrolu, zda opravdu vraci int?
+                    iret();
+                    break;
+                case (byte) 0xb0: //udelat kontrolu, zda opravdu vraci referenci?
+                    aret();
+                    break;
                 case (byte) 0xbb:
                     neww();
                     break;
@@ -119,6 +125,9 @@ public class Frame {
                 case (byte) 0xb7:
                     invokespecial();
                     break;
+                case (byte) 0xb8:
+                    invokestatic();
+                    break;   
                 case 0x2a:
                     aload_0();
                     break;
@@ -236,6 +245,9 @@ public class Frame {
                 case (byte) 0x32:
                     aaload();
                     break;
+                case (byte) 0x57:
+                    pop();
+                    break;
                 default:
                     throw new Exception("Neznámá instrukce " + JVM.unsignedToBytes(code[pc]));
             }
@@ -276,6 +288,20 @@ public class Frame {
 
     private void ret() {
         System.out.println("ret");
+        pc = code.length;
+    }
+    
+    private void iret() {
+        System.out.println("iret");
+        //kontrolovat, zda vraci povoleny typ?
+        invoker.operandStack.push(operandStack.pop());
+        pc = code.length;
+    }
+    
+    private void aret() {
+        System.out.println("aret");
+        //kontrolovat, zda vraci povoleny typ?
+        invoker.operandStack.push(operandStack.pop());
         pc = code.length;
     }
 
@@ -425,6 +451,48 @@ public class Frame {
         pc += 2;
     }
 
+    private void invokestatic() throws Exception {
+        System.out.println("invokestatic");
+        pc++;
+        int constPoolIndex = code[pc] << 8 | (code[pc + 1] & 0xFF);
+        ConstantMethodref methodRef = (ConstantMethodref) constantPool.getConstant(constPoolIndex);
+        int classIndex = methodRef.getClassIndex();
+        int classNameIndex = ((ConstantClass) constantPool.getConstant(classIndex)).getNameIndex();
+        String className = ((ConstantUtf8) constantPool.getConstant(classNameIndex)).getBytes();
+
+        int nameAndTypeIndex = methodRef.getNameAndTypeIndex();
+        ConstantNameAndType nameAndType = (ConstantNameAndType) constantPool.getConstant(nameAndTypeIndex);
+        int nameIndex = nameAndType.getNameIndex();
+        String methodName = ((ConstantUtf8) constantPool.getConstant(nameIndex)).getBytes();
+
+        System.out.println("metoda " + methodName + " třídy " + className);
+
+        Method m = null;
+
+        JavaClass clazz = JVM.getJavaClass(className);
+        for (Method method : clazz.getMethods()) {
+            if (method.getName().equals(methodName)) {
+                m = method;
+                break;
+            }
+        }
+
+        Value[] arguments = null;
+        
+        if (m.getArgumentTypes().length > 0) {
+            arguments = new Value[m.getArgumentTypes().length];
+            for (int i = m.getArgumentTypes().length - 1; i >= 0; i--) {
+                arguments[i] = operandStack.pop();
+            }
+        }
+
+        System.out.println("Volá se metoda: " + m.getName());
+        JVM.callMethod(m, arguments, (ReferenceValue) localVariables[0], this);
+        System.out.println("Doběhla metoda " + m.getName());
+        pc += 2;
+    }
+    
+    
     private void aload_0() {
         System.out.println("aload_0");
         pc++;
@@ -844,6 +912,12 @@ public class Frame {
         IntValue constant = new IntValue(code[pc + 1]);
         ((IntValue) localVariables[index]).inc(constant);
         pc += 2;
+    }
+    
+    private void pop() {
+        System.out.println("pop");
+        pc++;
+        operandStack.pop();
     }
 
 }
