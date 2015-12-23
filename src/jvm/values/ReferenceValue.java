@@ -5,10 +5,10 @@ package jvm.values;
  * @author Jaroslav Ševčík
  */
 public class ReferenceValue extends Value{
-    //Tohle bude index někam, většinou (vždy?) asi na haldu.
     private int value;
 
     public ReferenceValue(int value) {
+        super(Value.REFERENCE_TAG);
         this.value = value;
     }
 

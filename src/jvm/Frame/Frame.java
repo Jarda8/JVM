@@ -1,9 +1,9 @@
 package jvm.frame;
 
-import java.io.IOException;
 import jvm.values.Value;
 import java.util.ArrayDeque;
 import java.util.Deque;
+import jvm.Heap;
 import jvm.JVM;
 import static jvm.JVM.unsignedToBytes;
 import jvm.values.*;
@@ -35,7 +35,7 @@ public class Frame {
         this.constantPool = method.getConstantPool();
         this.code = method.getCode().getCode();
         this.invoker = invoker;
-        
+
         Type[] argumentTypes = method.getArgumentTypes();
         int i = 0, j = 0;
         if (!method.isStatic()) {
@@ -55,6 +55,14 @@ public class Frame {
         for (int k = 0; k < method.getCode().getCode().length; k++) {
             System.out.println(unsignedToBytes(method.getCode().getCode()[k]));
         }
+    }
+
+    public Value[] getLocalVariables() {
+        return localVariables;
+    }
+    
+    public Deque<Value> getOperandStack() {
+        return operandStack;
     }
 
     public void pushOnStack(Value val) {
@@ -127,7 +135,7 @@ public class Frame {
                     break;
                 case (byte) 0xb8:
                     invokestatic();
-                    break;   
+                    break;
                 case 0x2a:
                     aload_0();
                     break;
@@ -248,6 +256,9 @@ public class Frame {
                 case (byte) 0x57:
                     pop();
                     break;
+                case (byte) 0x1:
+                    aconst_null();
+                    break;
                 default:
                     throw new Exception("Neznámá instrukce " + JVM.unsignedToBytes(code[pc]));
             }
@@ -290,14 +301,14 @@ public class Frame {
         System.out.println("ret");
         pc = code.length;
     }
-    
+
     private void iret() {
         System.out.println("iret");
         //kontrolovat, zda vraci povoleny typ?
         invoker.operandStack.push(operandStack.pop());
         pc = code.length;
     }
-    
+
     private void aret() {
         System.out.println("aret");
         //kontrolovat, zda vraci povoleny typ?
@@ -307,6 +318,7 @@ public class Frame {
 
     private void neww() throws Exception {
         System.out.println("new");
+        JVM.heap.dumbHeap();
         pc++;
         int constPoolIndex = code[pc] << 8 | (code[pc + 1] & 0xFF);
         int nameIndex = ((ConstantClass) constantPool.getConstant(constPoolIndex)).getNameIndex();
@@ -339,11 +351,12 @@ public class Frame {
         operandStack.push(arrayRef);
         pc++;
     }
-    
-    private void anewarray() throws IOException {
+
+    private void anewarray() throws Exception {
         System.out.println("anewarray");
         pc++;
-        int constPoolIndex = code[pc] << 8 | (code[pc + 1] & 0xFF);int nameIndex = ((ConstantClass) constantPool.getConstant(constPoolIndex)).getNameIndex();
+        int constPoolIndex = code[pc] << 8 | (code[pc + 1] & 0xFF);
+        int nameIndex = ((ConstantClass) constantPool.getConstant(constPoolIndex)).getNameIndex();
         String className = ((ConstantUtf8) constantPool.getConstant(nameIndex)).getBytes();
         ReferenceValue classRef = JVM.getJavaClassRef(className);
         int sizeOfElement = 4;
@@ -421,6 +434,7 @@ public class Frame {
 
         if (className.equals("java/lang/Object") && methodName.equals("<init>")) {
             pc += 2;
+            operandStack.pop();
             System.out.println("Doběhla metoda " + methodName);
             return;
         }
@@ -478,7 +492,7 @@ public class Frame {
         }
 
         Value[] arguments = null;
-        
+
         if (m.getArgumentTypes().length > 0) {
             arguments = new Value[m.getArgumentTypes().length];
             for (int i = m.getArgumentTypes().length - 1; i >= 0; i--) {
@@ -491,8 +505,7 @@ public class Frame {
         System.out.println("Doběhla metoda " + m.getName());
         pc += 2;
     }
-    
-    
+
     private void aload_0() {
         System.out.println("aload_0");
         pc++;
@@ -614,7 +627,7 @@ public class Frame {
         } else {
             offset += getSuperclassesFieldsSize(clazz);
         }
-        
+
         return offset;
     }
 
@@ -634,7 +647,7 @@ public class Frame {
 
         JavaClass clazz = JVM.getJavaClass(className);
         int offset = jvm.Heap.OBJECT_HEAD_SIZE + getFieldOffset(clazz, fieldName);
-        
+
         switch (fieldType.charAt(0)) {
             case 'I':
                 JVM.heap.storeInt((IntValue) operandStack.pop(), (ReferenceValue) operandStack.pop(), offset);
@@ -710,7 +723,7 @@ public class Frame {
         ReferenceValue arrayRef = (ReferenceValue) operandStack.pop();
         JVM.heap.storeIntToArray(value, arrayRef, index);
     }
-    
+
     private void aastore() throws Exception {
         System.out.println("aastore");
         pc++;
@@ -719,7 +732,7 @@ public class Frame {
         ReferenceValue arrayRef = (ReferenceValue) operandStack.pop();
         JVM.heap.storeRefToArray(value, arrayRef, index);
     }
-    
+
     private void aaload() throws Exception {
         System.out.println("aaload");
         pc++;
@@ -728,7 +741,7 @@ public class Frame {
         ReferenceValue refVal = JVM.heap.fetchRefFromArray(arrayRef, index);
         operandStack.push(refVal);
     }
-    
+
     private void iaload() throws Exception {
         System.out.println("iaload");
         pc++;
@@ -736,14 +749,14 @@ public class Frame {
         ReferenceValue arrayRef = (ReferenceValue) operandStack.pop();
         operandStack.push(JVM.heap.fetchIntFromArray(arrayRef, index));
     }
-    
+
     private void iadd() {
         System.out.println("iadd");
         pc++;
         IntValue result = ((IntValue) operandStack.pop()).add((IntValue) operandStack.pop());
         operandStack.push(result);
     }
-    
+
     private void isub() {
         System.out.println("isub");
         pc++;
@@ -751,14 +764,14 @@ public class Frame {
         IntValue result = ((IntValue) operandStack.pop()).sub(x);
         operandStack.push(result);
     }
-    
+
     private void imul() {
         System.out.println("imul");
         pc++;
         IntValue result = ((IntValue) operandStack.pop()).mul((IntValue) operandStack.pop());
         operandStack.push(result);
     }
-    
+
     private void idiv() {
         System.out.println("idiv");
         pc++;
@@ -766,13 +779,13 @@ public class Frame {
         IntValue result = ((IntValue) operandStack.pop()).div(x);
         operandStack.push(result);
     }
-    
+
     private void gotoo() {
         System.out.println("goto");
         short offset = (short) (code[pc + 1] << 8 | (code[pc + 2] & 0xFF));
         pc += offset;
     }
-    
+
     private void ifeq() {
         System.out.println("ifeq");
         if (((IntValue) operandStack.pop()).getValue() == 0) {
@@ -782,7 +795,7 @@ public class Frame {
             pc += 3;
         }
     }
-    
+
     private void ifne() {
         System.out.println("ifne");
         if (((IntValue) operandStack.pop()).getValue() != 0) {
@@ -792,7 +805,7 @@ public class Frame {
             pc += 3;
         }
     }
-    
+
     private void iflt() {
         System.out.println("iflt");
         if (((IntValue) operandStack.pop()).getValue() < 0) {
@@ -802,7 +815,7 @@ public class Frame {
             pc += 3;
         }
     }
-    
+
     private void ifgt() {
         System.out.println("ifgt");
         if (((IntValue) operandStack.pop()).getValue() > 0) {
@@ -812,7 +825,7 @@ public class Frame {
             pc += 3;
         }
     }
-    
+
     private void ifle() {
         System.out.println("ifle");
         if (((IntValue) operandStack.pop()).getValue() <= 0) {
@@ -822,7 +835,7 @@ public class Frame {
             pc += 3;
         }
     }
-    
+
     private void ifge() {
         System.out.println("ifge");
         if (((IntValue) operandStack.pop()).getValue() >= 0) {
@@ -832,7 +845,7 @@ public class Frame {
             pc += 3;
         }
     }
-    
+
     private void if_icmpeq() {
         System.out.println("if_icmpeq");
         IntValue value2 = (IntValue) operandStack.pop();
@@ -844,7 +857,7 @@ public class Frame {
             pc += 3;
         }
     }
-    
+
     private void if_icmpne() {
         System.out.println("if_icmpne");
         IntValue value2 = (IntValue) operandStack.pop();
@@ -856,7 +869,7 @@ public class Frame {
             pc += 3;
         }
     }
-    
+
     private void if_icmplt() {
         System.out.println("if_icmplt");
         IntValue value2 = (IntValue) operandStack.pop();
@@ -868,7 +881,7 @@ public class Frame {
             pc += 3;
         }
     }
-    
+
     private void if_icmpge() {
         System.out.println("if_icmpge");
         IntValue value2 = (IntValue) operandStack.pop();
@@ -880,7 +893,7 @@ public class Frame {
             pc += 3;
         }
     }
-    
+
     private void if_icmpgt() {
         System.out.println("if_icmpgt");
         IntValue value2 = (IntValue) operandStack.pop();
@@ -892,7 +905,7 @@ public class Frame {
             pc += 3;
         }
     }
-    
+
     private void if_icmple() {
         System.out.println("if_icmple");
         IntValue value2 = (IntValue) operandStack.pop();
@@ -904,7 +917,7 @@ public class Frame {
             pc += 3;
         }
     }
-    
+
     private void iinc() {
         System.out.println("iinc");
         pc++;
@@ -913,11 +926,17 @@ public class Frame {
         ((IntValue) localVariables[index]).inc(constant);
         pc += 2;
     }
-    
+
     private void pop() {
         System.out.println("pop");
         pc++;
         operandStack.pop();
+    }
+    
+    private void aconst_null() {
+        System.out.println("aconst_null");
+        pc++;
+        operandStack.push(new ReferenceValue(0));
     }
 
 }
