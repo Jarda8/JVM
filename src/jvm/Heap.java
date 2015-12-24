@@ -109,6 +109,10 @@ public class Heap {
                 throw new Exception("Neznámý typ při alokaci fieldu: " + type);
         }
     }
+    
+    public int getClassIndex(ReferenceValue ref) {
+        return heap.getInt(ref.getValue() + CLASS_REF_OFFSET);
+    }
 
     public ReferenceValue allocateArray(int length, int sizeOfElement, int atype) throws Exception {
         int size = ARRAY_HEAD_SIZE + length * sizeOfElement;
@@ -248,7 +252,7 @@ public class Heap {
                 System.out.print("  ");
             }
         }
-        System.out.println("\n\n\n\n\n\n");
+        System.out.println("\n\n");
     }
 
     private int[] findFreeSpace(int size) throws Exception {
@@ -300,10 +304,10 @@ public class Heap {
         }
         sweep();
         joinAdjacentFreeBlocks();
+        dumbHeap();
     }
 
     private void mark(int objRef) throws Exception {
-        System.out.println("mark: " + objRef);
         int fieldOffset = 0;
         if (heap.getInt(objRef + GC_FLAG_OFFSET) == 1) {
             return;

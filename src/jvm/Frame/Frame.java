@@ -60,7 +60,7 @@ public class Frame {
     public Value[] getLocalVariables() {
         return localVariables;
     }
-    
+
     public Deque<Value> getOperandStack() {
         return operandStack;
     }
@@ -259,6 +259,9 @@ public class Frame {
                 case (byte) 0x1:
                     aconst_null();
                     break;
+                case (byte) 0x3a:
+                    astore();
+                    break;
                 default:
                     throw new Exception("Neznámá instrukce " + JVM.unsignedToBytes(code[pc]));
             }
@@ -318,7 +321,6 @@ public class Frame {
 
     private void neww() throws Exception {
         System.out.println("new");
-        JVM.heap.dumbHeap();
         pc++;
         int constPoolIndex = code[pc] << 8 | (code[pc + 1] & 0xFF);
         int nameIndex = ((ConstantClass) constantPool.getConstant(constPoolIndex)).getNameIndex();
@@ -327,6 +329,7 @@ public class Frame {
         ReferenceValue objRef = JVM.heap.allocateObject(classRef);
         operandStack.push(objRef);
         pc += 2;
+        JVM.heap.dumbHeap();
     }
 
     private void newarray() throws Exception {
@@ -350,6 +353,7 @@ public class Frame {
         ReferenceValue arrayRef = JVM.heap.allocateArray(((IntValue) operandStack.pop()).getValue(), sizeOfElement, atype);
         operandStack.push(arrayRef);
         pc++;
+        JVM.heap.dumbHeap();
     }
 
     private void anewarray() throws Exception {
@@ -576,6 +580,14 @@ public class Frame {
         System.out.println("astore_3");
         pc++;
         localVariables[3] = operandStack.pop();
+    }
+
+    private void astore() {
+        System.out.println("astore");
+        pc++;
+        int index = code[pc];
+        localVariables[index] = operandStack.pop();
+        pc++;
     }
 
     private int getTypeSize(byte type) throws Exception {
@@ -932,7 +944,7 @@ public class Frame {
         pc++;
         operandStack.pop();
     }
-    
+
     private void aconst_null() {
         System.out.println("aconst_null");
         pc++;
