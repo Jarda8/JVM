@@ -33,8 +33,8 @@ public class JVM {
         JavaClass mainClass = (new ClassParser(args[0])).parse();
 //        classTable.put(mainClass.getClassName(), mainClass);
         classTable.add(mainClass);
-        
-        ReferenceValue args2;//pole objektů typu initclasses.String
+
+        ReferenceValue args2 = null;//pole objektů typu initclasses.String
         ReferenceValue stringClassRef;
         if (args.length > 1) {
             stringClassRef = getJavaClassRef("initclasses/String");
@@ -50,16 +50,16 @@ public class JVM {
                 heap.storeRef(charArrayRef, stringRef, Heap.OBJECT_HEAD_SIZE + 4);
                 heap.storeRefToArray(stringRef, args2, new IntValue(i - 1));
             }
-        } else if(args.length == 1) {
-            System.out.println("Nezadal jste název programu nebo vstupního souboru!");
-            return;
-        } else {
-            System.out.println("Nezadal jste název programu a vstupního souboru!");
+        } else if (args.length == 0) {
+            System.out.println("Nezadal jste název spouštěného programu!");
             return;
         }
-        
-        Value[] mainArgs = new Value[1];
-        mainArgs[0] = args2;
+
+        Value[] mainArgs = null;
+        if (args2 != null) {
+            mainArgs = new Value[1];
+            mainArgs[0] = args2;
+        }
 
         frameStack.push(new Frame(mainClass.getMethods()[1], mainArgs, null, null));
         frameStack.peek().start();
