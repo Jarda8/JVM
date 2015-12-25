@@ -128,9 +128,6 @@ public class Frame {
                 case (byte) 0xb8:
                     invokestatic();
                     break;   
-                case (byte) 0xb6:
-                    invokevirtual();
-                    break;   
                 case 0x2a:
                     aload_0();
                     break;
@@ -495,73 +492,6 @@ public class Frame {
         pc += 2;
     }
     
-    private void invokevirtual() throws Exception {
-        System.out.println("invokevirtual");
-        pc++;
-        int constPoolIndex = code[pc] << 8 | (code[pc + 1] & 0xFF);
-        ConstantMethodref methodRef = (ConstantMethodref) constantPool.getConstant(constPoolIndex);
-        int classIndex = methodRef.getClassIndex();
-        int classNameIndex = ((ConstantClass) constantPool.getConstant(classIndex)).getNameIndex();
-        String className = ((ConstantUtf8) constantPool.getConstant(classNameIndex)).getBytes();
-        int nameAndTypeIndex = methodRef.getNameAndTypeIndex();
-        ConstantNameAndType nameAndType = (ConstantNameAndType) constantPool.getConstant(nameAndTypeIndex);
-        int nameIndex = nameAndType.getNameIndex();
-        String methodName = ((ConstantUtf8) constantPool.getConstant(nameIndex)).getBytes();
-        
-        System.out.println("metoda " + methodName + " třídy " + className);
-        
-        
-        
-        Method m = null;
-        
-        JavaClass clazz = JVM.getJavaClass(className);
-        for (Method method : clazz.getMethods()) {
-            if (method.getName().equals(methodName)) {
-                m = method;
-                break;
-            }
-        }
-        
-        if (m==null) { //jedna se o metodu predka
-            while(true) {
-                String SuperClassName = ((ConstantUtf8) clazz.getConstantPool().getConstant(((ConstantClass) clazz.getConstantPool().getConstant(clazz.getSuperclassNameIndex())).getNameIndex())).getBytes();
-                clazz = jvm.JVM.getJavaClass(SuperClassName);
-                System.out.println("Prohladavame metody tridy " + clazz.getClassName());
-            
-                for (Method method : clazz.getMethods()) {
-                    if (method.getName().equals(methodName)) {
-                        //System.out.println("\t HEUREKA, nasli jsme funkci " + methodName +" v tride "+ clazz.getClassName());
-                        m = method;
-                        break;
-                    }
-                }
-                if(m!=null) {
-                    break;
-                } else {
-                   continue;
-                }
-                
-            }
-        }
-        
-
-        Value[] arguments = null;
-        
-        if (m.getArgumentTypes().length > 0) {
-            arguments = new Value[m.getArgumentTypes().length];
-            for (int i = m.getArgumentTypes().length - 1; i >= 0; i--) {
-                arguments[i] = operandStack.pop();
-            }
-        }
-        
-        
-        
-        System.out.println("Volá se metoda: " + m.getName());
-        JVM.callMethod(m, arguments, (ReferenceValue) localVariables[0], this);
-        System.out.println("Doběhla metoda " + m.getName());
-        pc += 2;
-        
-    }
     
     private void aload_0() {
         System.out.println("aload_0");
