@@ -8,6 +8,7 @@ public class IntValue extends Value{
     private int value;
 
     public IntValue(int value) {
+        super(Value.INT_TAG);
         this.value = value;
     }
 

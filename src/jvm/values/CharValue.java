@@ -8,6 +8,7 @@ public class CharValue extends Value{
     private char value;
 
     public CharValue(char value) {
+        super(Value.CHAR_TAG);
         this.value = value;
     }
 
