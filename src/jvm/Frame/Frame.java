@@ -1,5 +1,6 @@
 package jvm.frame;
 
+import java.io.IOException;
 import jvm.values.Value;
 import java.util.ArrayDeque;
 import java.util.Deque;
@@ -25,8 +26,6 @@ public class Frame {
     private final byte[] code;
     private final Frame invoker;
 
-    //Odkaz na třídu? Pak bych nepotřeboval odkaz na constant pool. Přistupoval bych k němu přes třídu.
-    //Argumenty se budou možná předávat jinak. Pushnou se rovnou na operand stack volajícím?
     public Frame(Method method, Value[] arguments, ReferenceValue thisHeapIndex, Frame invoker) throws Exception {
         System.out.println("Vytváří se frame metody: " + method.getName());
         this.operandStack = new ArrayDeque<>(method.getCode().getMaxStack());
@@ -265,6 +264,15 @@ public class Frame {
                 case (byte) 0x3a:
                     astore();
                     break;
+                case (byte) 0x36:
+                    istore();
+                    break;
+                case (byte) 0x15:
+                    iload();
+                    break;
+                case (byte) 0x19:
+                    aload();
+                    break;
                 default:
                     throw new Exception("Neznámá instrukce " + JVM.unsignedToBytes(code[pc]));
             }
@@ -276,6 +284,14 @@ public class Frame {
         pc++;
         IntValue val = new IntValue(code[pc]);
         operandStack.push(val);
+        pc++;
+    }
+    
+    private void istore() {
+        System.out.println("istore");
+        pc++;
+        int index = code[pc];
+        localVariables[index] = operandStack.pop();
         pc++;
     }
 
@@ -439,16 +455,16 @@ public class Frame {
 
         System.out.println("metoda " + methodName + " třídy " + className);
 
-        if (className.equals("java/lang/Object") && methodName.equals("<init>")) {
-            pc += 2;
-            operandStack.pop();
-            System.out.println("Doběhla metoda " + methodName);
-            return;
-        }
+//        if (className.equals("java/lang/Object") && methodName.equals("<init>")) {
+//            pc += 2;
+//            operandStack.pop();
+//            System.out.println("Doběhla metoda " + methodName);
+//            return;
+//        }
 
         Method m = null;
         //TODO Takhle patrně zjistím třídu proměnné, na které byla metoda zavolána, nikoliv třídu konkrétní instance (Může to být podtřída.).
-        //Třída se bude muset zjistit z instance na haldě. Index na haldu je v localVariables[0] (pokud jde o instanční metodu) a index do classTable je na prvním místě v instanci.
+        //Třída se bude muset zjistit z instance na haldě. Index na haldu je v localVariables[0] (pokud jde o instanční metodu).
         //Tohle se možná nemusí řešit v invokespecial, ale v invokevirtual nebo jak se jmenuje ta instrukce.
         JavaClass clazz = JVM.getJavaClass(className);
         for (Method method : clazz.getMethods()) {
@@ -508,9 +524,17 @@ public class Frame {
         }
 
         System.out.println("Volá se metoda: " + m.getName());
-        JVM.callMethod(m, arguments, (ReferenceValue) localVariables[0], this);
+        JVM.callMethod(m, arguments, null, this);
         System.out.println("Doběhla metoda " + m.getName());
         pc += 2;
+    }
+    
+    private void aload() {
+        System.out.println("aload");
+        pc++;
+        int index = code[pc];
+        operandStack.push(localVariables[index]);
+        pc++;
     }
 
     private void invokevirtual() throws Exception {
@@ -599,6 +623,14 @@ public class Frame {
         pc++;
         operandStack.push(localVariables[3]);
     }
+    
+    private void iload() {
+        System.out.println("iload");
+        pc++;
+        int index = code[pc];
+        operandStack.push(localVariables[index]);
+        pc++;
+    }
 
     private void iload_0() {
         System.out.println("iload_0");
@@ -675,7 +707,11 @@ public class Frame {
     }
 
     private int getSuperclassesFieldsSize(JavaClass clazz) throws Exception {
-        if (clazz.getClassName().equals("initclasses.Object")) {
+//        if (clazz.getClassName().equals("initclasses.Object")) {
+//            return 0;
+//        }
+
+        if (clazz.getClassName().equals("java.lang.Object")) {
             return 0;
         }
         String superClassName = ((ConstantUtf8) clazz.getConstantPool().getConstant(((ConstantClass) clazz.getConstantPool().getConstant(clazz.getSuperclassNameIndex())).getNameIndex())).getBytes();
@@ -1016,6 +1052,19 @@ public class Frame {
         pc++;
         operandStack.push(new ReferenceValue(0));
     }
+    
+//    private void ldc() throws Exception {
+//        System.out.println("ldc");
+//        pc++;
+//        int index = code[pc];
+//        Constant c = constantPool.getConstant(index);
+//        switch(c.getTag()) {
+//            case 8: index = ((ConstantString) c).getStringIndex();
+//                String s = ((ConstantUtf8) constantPool.getConstant(index)).getBytes();
+//                JVM.heap.allocateObject(JVM.getJavaClassRef("java/lang/String"));
+//        }
+//        pc++;
+//    }
 
 }
 

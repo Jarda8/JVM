@@ -22,34 +22,13 @@ public class JVM {
     //přidat native methods stack
 
     public static void main(String[] args) throws Exception {
-
-        //loading core classes
-//        classTable.put("initclasses/Sring", (new ClassParser("initclasses/String.class")).parse());
-//        classTable.put("initclasses/Object", (new ClassParser("initclasses/Object.class")).parse());
-        classTable.add((new ClassParser("initclasses/Object.class")).parse());
-        classTable.add((new ClassParser("initclasses/String.class")).parse());
-
         //loading main class
         JavaClass mainClass = (new ClassParser(args[0])).parse();
-//        classTable.put(mainClass.getClassName(), mainClass);
         classTable.add(mainClass);
 
-        ReferenceValue args2 = null;//pole objektů typu initclasses.String
-        ReferenceValue stringClassRef;
+        ReferenceValue args2 = null;
         if (args.length > 1) {
-            stringClassRef = getJavaClassRef("initclasses/String");
-            args2 = heap.allocateArray(args.length - 1, 4, stringClassRef.getValue());
-            for (int i = 1; i < args.length; i++) {
-                ReferenceValue stringRef = heap.allocateObject(stringClassRef);
-                int stringLength = args[i].length();
-                heap.storeInt(new IntValue(stringLength), stringRef, Heap.OBJECT_HEAD_SIZE);
-                ReferenceValue charArrayRef = heap.allocateArray(args[i].length(), 2, 5);
-                for (int j = 0; j < stringLength; j++) {
-                    heap.storeCharToArray(new CharValue(args[i].charAt(j)), charArrayRef, new IntValue(j));
-                }
-                heap.storeRef(charArrayRef, stringRef, Heap.OBJECT_HEAD_SIZE + 4);
-                heap.storeRefToArray(stringRef, args2, new IntValue(i - 1));
-            }
+            args2 = prepareMainArguments(args);
         } else if (args.length == 0) {
             System.out.println("Nezadal jste název spouštěného programu!");
             return;
@@ -68,31 +47,34 @@ public class JVM {
         frameStack.pop();
         //uklidim haldu a classTable?
         heap.dumbHeap();
-
-//        System.out.println(classTable.get("testapp.TestApp").getMethods()[0]);
-//        System.out.println(((ConstantInteger)classTable.get("testapp.TestApp").getConstantPool().getConstant(2)).getBytes());
     }
 
-    //TODO predělat všechno na StringValue nebo ReferenceValue, až bude 
-    private static Value[] parseMainArguments(String[] args) {
-        Value[] valArgs;
-        if (args.length <= 1) {
-            return null;
+    private static ReferenceValue prepareMainArguments(String[] args) throws Exception {
+//            stringClassRef = getJavaClassRef("initclasses/String");
+        ReferenceValue stringClassRef = getJavaClassRef("java/lang/String");
+        ReferenceValue args2 = heap.allocateArray(args.length - 1, 4, stringClassRef.getValue());
+        ReferenceValue stringRef;
+        ReferenceValue charArrayRef;
+        int stringLength;
+        for (int i = 1; i < args.length; i++) {
+            stringRef = heap.allocateObject(stringClassRef);
+            stringLength = args[i].length();
+            charArrayRef = heap.allocateArray(stringLength, 2, 5);
+            for (int j = 0; j < stringLength; j++) {
+                heap.storeCharToArray(new CharValue(args[i].charAt(j)), charArrayRef, new IntValue(j));
+            }
+            heap.storeRef(charArrayRef, stringRef, Heap.OBJECT_HEAD_SIZE);
+            heap.storeRefToArray(stringRef, args2, new IntValue(i - 1));
         }
-        valArgs = new Value[args.length - 1];
-        for (int i = 0; i < args.length - 1; i++) {
-
-            //alokovat někam (na haldu) string
-            //valArgs[i] = new StringValue(index začátku stringu)
-        }
-        return valArgs;
+        return args2;
     }
 
     public static JavaClass getJavaClass(String className) throws IOException {
-//        JavaClass result = classTable.get(className);
-        if (className.equals("java/lang/Object")) {
-            className = "initclasses/Object";
-        }
+//        if (className.equals("java/lang/Object")) {
+//            className = "initclasses/Object";
+//        }
+        
+        System.out.println(className);
         JavaClass result = null;
         for (JavaClass clazz : classTable) {
             if (clazz.getClassName().equals(className)) {
@@ -103,16 +85,15 @@ public class JVM {
         if (result == null) {
             result = (new ClassParser(className + ".class")).parse();
             //chybí alokace a inicializace třídních proměnných
-//            classTable.put(className, result);
             classTable.add(result);
         }
         return result;
     }
 
     public static ReferenceValue getJavaClassRef(String className) throws IOException {
-        if (className.equals("java/lang/Object")) {
-            className = "initclasses/Object";
-        }
+//        if (className.equals("java/lang/Object")) {
+//            className = "initclasses/Object";
+//        }
         int result = -1;
         for (int i = 0; i < classTable.size(); i++) {
             if (classTable.get(i).getClassName().equals(className)) {
@@ -124,7 +105,6 @@ public class JVM {
             JavaClass newClass = (new ClassParser(className + ".class")).parse();
             classTable.add(newClass);
             //chybí alokace a inicializace třídních proměnných
-//            classTable.put(className, result);
             result = classTable.indexOf(newClass);
         }
         return new ReferenceValue(result);

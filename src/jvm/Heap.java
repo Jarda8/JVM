@@ -12,8 +12,8 @@ import org.apache.bcel.classfile.*;
  */
 public class Heap {
 
-//    private static final int HEAP_SIZE = (int) Math.pow(2, 20);
-    private static final int HEAP_SIZE = 129;
+    private static final int HEAP_SIZE = (int) Math.pow(2, 20) + 1;
+//    private static final int HEAP_SIZE = 129;
     public final ByteBuffer heap = ByteBuffer.allocate(HEAP_SIZE);
     public static final int OBJECT_HEAD_SIZE = 12;
     public static final int ARRAY_HEAD_SIZE = 16;
@@ -41,7 +41,10 @@ public class Heap {
         }
 
         for (Field field : clazz.getFields()) {
-            size += getTypeSize(field.getType().getType());
+            if (!field.isStatic()) {
+                System.out.println(field.getType().getSignature() + field.getType().getType());
+                size += getTypeSize(field.getType().getType());
+            }
         }
         size += (8 - size % 8) % 8;// zarovnání na 8 bytů(Potřebuji vždy aspoň 8 bytů velký free blok na zapsání infa o velikosti a odkaz na další free blok.)
         freeBlock = findFreeSpace(size);
@@ -79,7 +82,10 @@ public class Heap {
     private int getSuperclassFieldsSize(JavaClass superClass) throws Exception {
         int fieldsSize = 0;
 
-        if (superClass.getClassName().equals("initclasses.Object")) {
+//        if (superClass.getClassName().equals("initclasses.Object")) {
+//            return 0;
+//        }
+        if (superClass.getClassName().equals("java.lang.Object")) {
             return 0;
         }
 
@@ -89,7 +95,9 @@ public class Heap {
         }
 
         for (Field field : superClass.getFields()) {
-            fieldsSize += getTypeSize(field.getType().getType());
+            if (!field.isStatic()) {
+                fieldsSize += getTypeSize(field.getType().getType());
+            }
         }
         return fieldsSize;
     }
@@ -109,7 +117,7 @@ public class Heap {
                 throw new Exception("Neznámý typ při alokaci fieldu: " + type);
         }
     }
-    
+
     public int getClassIndex(ReferenceValue ref) {
         return heap.getInt(ref.getValue() + CLASS_REF_OFFSET);
     }
@@ -246,7 +254,7 @@ public class Heap {
 
     public void dumbHeap() {
         System.out.println("\nheap dump:");
-        for (int i = 1; i < 129; i++) {
+        for (int i = 1; i < 257; i++) {
             System.out.print(jvm.JVM.unsignedToBytes(heap.get(i)) + " ");
             if (i % 4 == 0) {
                 System.out.print("  ");
@@ -258,7 +266,7 @@ public class Heap {
     private int[] findFreeSpace(int size) throws Exception {
         int ptr = -1;
         int freeBlock;
-        
+
         if (freeList == -1) {
             collectGarbage();
             if (freeList == -1) {
@@ -331,7 +339,10 @@ public class Heap {
     private int markSuperclassFields(JavaClass superClass, int objRef) throws Exception {
         int fieldOffset = 0;
 
-        if (superClass.getClassName().equals("initclasses.Object")) {
+//        if (superClass.getClassName().equals("initclasses.Object")) {
+//            return 0;
+//        }
+        if (superClass.getClassName().equals("java.lang.Object")) {
             return 0;
         }
 
@@ -386,12 +397,12 @@ public class Heap {
             }
         }
     }
-    
+
     private void joinAdjacentFreeBlocks() {
         int freeBlock = freeList;
         int freeBlockSize;
         int nextFreeBlock;
-        
+
         while (freeBlock != -1) {
             freeBlockSize = heap.getInt(freeBlock);
             nextFreeBlock = heap.getInt(freeBlock + 4);
