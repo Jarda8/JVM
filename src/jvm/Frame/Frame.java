@@ -1,6 +1,5 @@
 package jvm.frame;
 
-import java.io.IOException;
 import jvm.values.Value;
 import java.util.ArrayDeque;
 import java.util.Deque;
@@ -272,6 +271,12 @@ public class Frame {
                     break;
                 case (byte) 0x19:
                     aload();
+                    break;
+                case (byte) 0xbe:
+                    arraylength();
+                    break;
+                case (byte) 0x34:
+                    caload();
                     break;
                 default:
                     throw new Exception("Neznámá instrukce " + JVM.unsignedToBytes(code[pc]));
@@ -595,7 +600,7 @@ public class Frame {
         }
         
         System.out.println("Volá se metoda: " + m.getName());
-        JVM.callMethod(m, arguments, (ReferenceValue) localVariables[0], this);
+        JVM.callMethod(m, arguments, (ReferenceValue) operandStack.pop(), this);
         System.out.println("Doběhla metoda " + m.getName());
         pc += 2;
     }
@@ -1051,6 +1056,21 @@ public class Frame {
         System.out.println("aconst_null");
         pc++;
         operandStack.push(new ReferenceValue(0));
+    }
+    
+    private void arraylength() {
+        System.out.println("arraylength");
+        pc++;
+        operandStack.push(JVM.heap.getArrayLength((ReferenceValue) operandStack.pop()));
+    }
+    
+    private void caload() throws Exception {
+        System.out.println("caload");
+        pc++;
+        IntValue index = (IntValue) operandStack.pop();
+        ReferenceValue arrayRef = (ReferenceValue) operandStack.pop();
+        // Java ukládá char na stack jako int a podle toho pak používá instrukce. fetchCharFromArray vrací CharValue, takže to bude možná někde dělat problémy.
+        operandStack.push(JVM.heap.fetchCharFromArray(arrayRef, index));
     }
     
 //    private void ldc() throws Exception {

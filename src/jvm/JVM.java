@@ -73,8 +73,6 @@ public class JVM {
 //        if (className.equals("java/lang/Object")) {
 //            className = "initclasses/Object";
 //        }
-        
-        System.out.println(className);
         JavaClass result = null;
         for (JavaClass clazz : classTable) {
             if (clazz.getClassName().equals(className)) {

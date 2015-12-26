@@ -1,6 +1,5 @@
 package jvm;
 
-import java.io.IOException;
 import java.nio.ByteBuffer;
 import jvm.frame.Frame;
 import jvm.values.*;
@@ -42,7 +41,6 @@ public class Heap {
 
         for (Field field : clazz.getFields()) {
             if (!field.isStatic()) {
-                System.out.println(field.getType().getSignature() + field.getType().getType());
                 size += getTypeSize(field.getType().getType());
             }
         }
@@ -413,5 +411,9 @@ public class Heap {
                 freeBlock = nextFreeBlock;
             }
         }
+    }
+    
+    public IntValue getArrayLength(ReferenceValue arrayRef) {
+        return new IntValue(heap.getInt(arrayRef.getValue() + LENGTH_OFFSET));
     }
 }
