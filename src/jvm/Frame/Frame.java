@@ -16,11 +16,9 @@ import org.apache.bcel.generic.Type;
  */
 public class Frame {
 
-    //Možná by měl být jeden pc pro celou JVM (podle specifikace jeden pro vlákno) a při spuštění nové metody se někam ukládá původní hodnota?
     private int pc = 0;
     private final Deque<Value> operandStack;
     private final Value[] localVariables;
-    //constant pool je jeden pro třídu
     private final ConstantPool constantPool;
     private final byte[] code;
     private final Frame invoker;
@@ -29,7 +27,6 @@ public class Frame {
         System.out.println("Vytváří se frame metody: " + method.getName());
         this.operandStack = new ArrayDeque<>(method.getCode().getMaxStack());
         this.localVariables = new Value[method.getCode().getMaxLocals()];
-        //constant pool je jeden pro třídu
         this.constantPool = method.getConstantPool();
         this.code = method.getCode().getCode();
         this.invoker = invoker;
@@ -41,7 +38,6 @@ public class Frame {
             j++;
         }
 
-//        System.out.println(method.getArgumentTypes()[0].getType());
         if (arguments != null) {
             for (; i < argumentTypes.length; i++, j++) {
                 localVariables[j] = arguments[i];
@@ -116,10 +112,10 @@ public class Frame {
                 case (byte) 0xb1:
                     ret();
                     break;
-                case (byte) 0xac: //udelat kontrolu, zda opravdu vraci int?
+                case (byte) 0xac:
                     iret();
                     break;
-                case (byte) 0xb0: //udelat kontrolu, zda opravdu vraci referenci?
+                case (byte) 0xb0:
                     aret();
                     break;
                 case (byte) 0xbb:
@@ -334,14 +330,12 @@ public class Frame {
 
     private void iret() {
         System.out.println("iret");
-        //kontrolovat, zda vraci povoleny typ?
         invoker.operandStack.push(operandStack.pop());
         pc = code.length;
     }
 
     private void aret() {
         System.out.println("aret");
-        //kontrolovat, zda vraci povoleny typ?
         invoker.operandStack.push(operandStack.pop());
         pc = code.length;
     }
@@ -364,19 +358,7 @@ public class Frame {
         int sizeOfElement;
         pc++;
         byte atype = code[pc];
-        switch (atype) {
-            case 10://int
-                sizeOfElement = 4;
-                break;
-            case 5://char
-                sizeOfElement = 2;
-                break;
-            case 4://boolean (s booleanem se pracuje jako s intem)
-                sizeOfElement = 4;
-                break;
-            default:
-                throw new Exception("Neznámý typ elementu při alokaci pole: " + atype);
-        }
+        sizeOfElement = Heap.getTypeSize(atype);
         ReferenceValue arrayRef = JVM.heap.allocateArray(((IntValue) operandStack.pop()).getValue(), sizeOfElement, atype);
         operandStack.push(arrayRef);
         pc++;
@@ -391,8 +373,8 @@ public class Frame {
         String className = ((ConstantUtf8) constantPool.getConstant(nameIndex)).getBytes();
         ReferenceValue classRef = JVM.getJavaClassRef(className);
         int sizeOfElement = 4;
-        //Možná by se mělo pole referencí alokovat jinak. Jako atype by byla 14 (nebo 13 u vícerozměrného pole), potom reference na třídu Objektu, pak délka a pak samotné reference.
-        ReferenceValue arrayRef = JVM.heap.allocateArray(((IntValue) operandStack.pop()).getValue(), sizeOfElement, classRef.getValue());
+        int type = 14;// reference
+        ReferenceValue arrayRef = JVM.heap.allocateArray(((IntValue) operandStack.pop()).getValue(), sizeOfElement, type);
         operandStack.push(arrayRef);
         pc += 2;
     }
@@ -412,7 +394,7 @@ public class Frame {
         }
         int sizeOfElement = 4;
         int sizeOfLastElement = 4;// Umí jenom inty.
-        int type = 13;//reference na pole
+        int type = 13;// reference na pole
         ReferenceValue arrayRef = JVM.heap.allocateArray(dimensionsLengths[0].getValue(), sizeOfElement, type);
         ReferenceValue hlpArrayRef;
         for (int i = 0; i < dimensionsLengths[0].getValue(); i++) {
@@ -427,7 +409,6 @@ public class Frame {
     private void dup() {
         System.out.println("dup");
         pc++;
-        //mělká kopie - Měla by být hluboká?
         Value topValue = operandStack.peek();
         operandStack.push(topValue);
     }
@@ -490,17 +471,7 @@ public class Frame {
 
         System.out.println("metoda " + methodName + " třídy " + className);
 
-//        if (className.equals("java/lang/Object") && methodName.equals("<init>")) {
-//            pc += 2;
-//            operandStack.pop();
-//            System.out.println("Doběhla metoda " + methodName);
-//            return;
-//        }
-
         Method m = null;
-        //TODO Takhle patrně zjistím třídu proměnné, na které byla metoda zavolána, nikoliv třídu konkrétní instance (Může to být podtřída.).
-        //Třída se bude muset zjistit z instance na haldě. Index na haldu je v localVariables[0] (pokud jde o instanční metodu).
-        //Tohle se možná nemusí řešit v invokespecial, ale v invokevirtual nebo jak se jmenuje ta instrukce.
         JavaClass clazz = JVM.getJavaClass(className);
         for (Method method : clazz.getMethods()) {
             if (method.getName().equals(methodName)) {
@@ -517,7 +488,6 @@ public class Frame {
             }
         }
 
-//        System.out.println("Volá se metoda: " + m.getName());
         JVM.callMethod(m, arguments, (ReferenceValue) operandStack.pop(), this);
         System.out.println("Doběhla metoda " + m.getName());
         pc += 2;
@@ -733,31 +703,7 @@ public class Frame {
         pc++;
     }
 
-//    private int getTypeSize(byte type) throws Exception {
-//        int result;
-//        switch (type) {
-//            case 10:
-//                result = 4;
-//                break;//int
-//            case 5:
-//                result = 2;
-//                break;//char
-//            case 13:
-//                result = 4;
-//                break;//array ref
-//            case 14:
-//                result = 4;
-//                break;//ref
-//            default:
-//                throw new Exception("Neznámý typ při zjišťování velikosti typu: " + type);
-//        }
-//        return result;
-//    }
-
     private int getSuperclassesFieldsSize(JavaClass clazz) throws Exception {
-//        if (clazz.getClassName().equals("initclasses.Object")) {
-//            return 0;
-//        }
 
         if (clazz.getClassName().equals("java.lang.Object")) {
             return 0;
@@ -840,15 +786,12 @@ public class Frame {
         String className = ((ConstantUtf8) constantPool.getConstant(classNameIndex)).getBytes();
         int nameAndTypeIndex = fieldRef.getNameAndTypeIndex();
         ConstantNameAndType nameAndType = (ConstantNameAndType) constantPool.getConstant(nameAndTypeIndex);
-//        int nameIndex = nameAndType.getNameIndex();
-//        String fieldName = ((ConstantUtf8) constantPool.getConstant(nameIndex)).getBytes();
         String fieldName = nameAndType.getName(constantPool);
         String fieldType = nameAndType.getSignature(constantPool);
 
         JavaClass clazz = JVM.getJavaClass(className);
         int offset = jvm.Heap.OBJECT_HEAD_SIZE + getFieldOffset(clazz, fieldName);
 
-        //typ budu brát z field descriptoru
         switch (fieldType.charAt(0)) {
             case 'I':
                 operandStack.push(JVM.heap.fetchInt((ReferenceValue) operandStack.pop(), offset));
@@ -1112,7 +1055,6 @@ public class Frame {
         pc++;
         IntValue index = (IntValue) operandStack.pop();
         ReferenceValue arrayRef = (ReferenceValue) operandStack.pop();
-        // Java ukládá char na stack jako int a podle toho pak používá instrukce. fetchCharFromArray vrací CharValue, takže to bude možná někde dělat problémy.
         operandStack.push(JVM.heap.fetchCharFromArray(arrayRef, index));
     }
     
@@ -1130,15 +1072,3 @@ public class Frame {
 //    }
 
 }
-
-//            Vrací to nějaký divný čísla. Měly by odpovídat tagům classfilu.
-//            switch (argumentTypes[i].getType()) {
-//                case 10: case 4: case 5: int); break;//10 int, 4 boolean, 5 char,
-//                case 14: class/string; break;//14 class/string - Je divný, že to vrací stejný číslo. Class a String by měly být jiný
-//                case 6: float; break;//6 float
-//                case 7: double; break; break;//7 double
-//                case 13: array; break; break;//13 array
-//                default: throw new Exception("Neznámý typ argumentu při vytváření framu!");
-//Asi bude stačit jenom pár základních typů - int, boolean, string/obj reference, array reference, char
-//            }
-//        V implementaci returnu se návratové hodnoty pushnou rovnou na operand stack volající metody (případně jinam, pokud jde o main) a posune se pc volajícího.
