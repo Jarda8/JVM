@@ -621,15 +621,15 @@ public class Frame {
 
         Value[] arguments = null;
         
-        System.out.println("Argumentu: " + m.getArgumentTypes().length);
-        System.out.println(m.isNative());
+//        System.out.println("Argumentu: " + m.getArgumentTypes().length);
+//        System.out.println(m.isNative());
         
         if (m.getArgumentTypes().length > 0) {
             arguments = new Value[m.getArgumentTypes().length];
-            System.out.println("Argument tagy:");
+//            System.out.println("Argument tagy:");
             for (int i = m.getArgumentTypes().length - 1; i >= 0; i--) {
                 arguments[i] = operandStack.pop();
-                System.out.println(arguments[i].tag);
+//                System.out.println(arguments[i].tag);
             }
         }
         

@@ -55,6 +55,9 @@ public class JVM {
         frameStack.pop();
         //uklidim haldu a classTable?
         heap.dumbHeap();
+        for (JavaClass clazz : classTable) {
+            System.out.println(clazz.getClassName());
+        }
     }
     
     private static void prepareNativeMethods() {
@@ -67,7 +70,7 @@ public class JVM {
     private static ReferenceValue prepareMainArguments(String[] args) throws Exception {
 //            stringClassRef = getJavaClassRef("initclasses/String");
         ReferenceValue stringClassRef = getJavaClassRef("java/lang/String");
-        ReferenceValue args2 = heap.allocateArray(args.length - 1, 4, stringClassRef.getValue());
+        ReferenceValue args2 = heap.allocateArray(args.length - 1, 4, 14);
         ReferenceValue stringRef;
         ReferenceValue charArrayRef;
         int stringLength;
@@ -88,9 +91,10 @@ public class JVM {
 //        if (className.equals("java/lang/Object")) {
 //            className = "initclasses/Object";
 //        }
+        String classNameDots =  className.replaceAll("/", ".");
         JavaClass result = null;
         for (JavaClass clazz : classTable) {
-            if (clazz.getClassName().equals(className)) {
+            if (clazz.getClassName().equals(classNameDots)) {
                 result = clazz;
                 break;
             }
@@ -107,9 +111,10 @@ public class JVM {
 //        if (className.equals("java/lang/Object")) {
 //            className = "initclasses/Object";
 //        }
+        String classNameDots =  className.replaceAll("/", ".");
         int result = -1;
         for (int i = 0; i < classTable.size(); i++) {
-            if (classTable.get(i).getClassName().equals(className)) {
+            if (classTable.get(i).getClassName().equals(classNameDots)) {
                 result = i;
                 break;
             }
