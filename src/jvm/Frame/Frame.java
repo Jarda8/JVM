@@ -479,6 +479,27 @@ public class Frame {
                 break;
             }
         }
+        
+        if (m==null) { //jedna se o metodu predka
+            while(true) {
+                String SuperClassName = ((ConstantUtf8) clazz.getConstantPool().getConstant(((ConstantClass) clazz.getConstantPool().getConstant(clazz.getSuperclassNameIndex())).getNameIndex())).getBytes();
+                clazz = jvm.JVM.getJavaClass(SuperClassName);
+                System.out.println("Prohladavame metody tridy " + clazz.getClassName());
+            
+                for (Method method : clazz.getMethods()) {
+                    if (method.getName().equals(methodName)) {
+                        //System.out.println("\t HEUREKA, nasli jsme funkci " + methodName +" v tride "+ clazz.getClassName());
+                        m = method;
+                        break;
+                    }
+                }
+                if(m!=null) {
+                    break;
+                } else {
+                   continue;
+                }        
+            }
+        }
 
         Value[] arguments = null;
         if (m.getArgumentTypes().length > 0) {
@@ -602,6 +623,22 @@ public class Frame {
 //                System.out.println(arguments[i].tag);
             }
         }
+        
+        int instanceClassIndex = JVM.heap.getClassIndex((ReferenceValue) operandStack.peek());
+        JavaClass instanceClass =  JVM.getJavaClassByIndex(new ReferenceValue(instanceClassIndex));
+        
+        if(instanceClass.getClassName() == null ? clazz.getClassName() != null : !instanceClass.getClassName().equals(clazz.getClassName())) {
+            System.out.println("\t Prohledavame metody tridy " + instanceClass.getClassName());
+            
+            for (Method method : instanceClass.getMethods()) {
+                if (method.getName().equals(methodName)) {
+                    System.out.println("Nasli jsme metodu v instanci!!!!");
+                    m = method;
+                    break;
+                }
+            }
+        }
+        
         if(JVM.isNative(m)) {
             System.out.println("Volá se NATIVNI metoda: " + m.getName());
             JVM.callNativeMethod(m, arguments, (ReferenceValue) operandStack.pop(), this);
