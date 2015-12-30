@@ -8,6 +8,7 @@ import java.util.Deque;
 import java.util.List;
 import jvm.frame.Frame;
 import jvm.values.*;
+import nativemethods.ReadInts;
 import org.apache.bcel.classfile.ClassParser;
 import org.apache.bcel.classfile.JavaClass;
 import org.apache.bcel.classfile.Method;
