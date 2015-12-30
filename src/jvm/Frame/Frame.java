@@ -621,7 +621,7 @@ public class Frame {
         
 
         Value[] arguments = null;
-        
+        System.out.println(m.getArgumentTypes().length);
         if (m.getArgumentTypes().length > 0) {
             arguments = new Value[m.getArgumentTypes().length];
             for (int i = m.getArgumentTypes().length - 1; i >= 0; i--) {

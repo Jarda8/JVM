@@ -7,6 +7,8 @@ public class File {
         this.fileName = fileName;
     }
     
-    public native int[] readInt(int number);
+    public native int[] readInts(int count);
+    
+    public native void writeInts(int[] numbers);
     
 }
