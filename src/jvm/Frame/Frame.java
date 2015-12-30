@@ -632,7 +632,6 @@ public class Frame {
 //                System.out.println(arguments[i].tag);
             }
         }
-        
         if(JVM.isNative(m)) {
             System.out.println("Volá se NATIVNI metoda: " + m.getName());
             JVM.callNativeMethod(m, arguments, (ReferenceValue) operandStack.pop(), this);
@@ -734,23 +733,26 @@ public class Frame {
         pc++;
     }
 
-    private int getTypeSize(byte type) throws Exception {
-        int result;
-        switch (type) {
-            case 10:
-                result = 4;
-                break;//int
-            case 5:
-                result = 2;
-                break;//char
-            case 13:
-                result = 4;
-                break;//array ref
-            default:
-                throw new Exception("Neznámý typ při zjišťování velikosti typu: " + type);
-        }
-        return result;
-    }
+//    private int getTypeSize(byte type) throws Exception {
+//        int result;
+//        switch (type) {
+//            case 10:
+//                result = 4;
+//                break;//int
+//            case 5:
+//                result = 2;
+//                break;//char
+//            case 13:
+//                result = 4;
+//                break;//array ref
+//            case 14:
+//                result = 4;
+//                break;//ref
+//            default:
+//                throw new Exception("Neznámý typ při zjišťování velikosti typu: " + type);
+//        }
+//        return result;
+//    }
 
     private int getSuperclassesFieldsSize(JavaClass clazz) throws Exception {
 //        if (clazz.getClassName().equals("initclasses.Object")) {
@@ -764,7 +766,7 @@ public class Frame {
         JavaClass superClass = JVM.getJavaClass(superClassName);
         int size = 0;
         for (Field field : superClass.getFields()) {
-            size += getTypeSize(field.getType().getType());
+            size += Heap.getTypeSize(field.getType().getType());
         }
         return getSuperclassesFieldsSize(superClass) + size;
     }
@@ -778,7 +780,7 @@ public class Frame {
                 field = field1;
                 break;
             }
-            offset += getTypeSize(field1.getType().getType());
+            offset += Heap.getTypeSize(field1.getType().getType());
         }
         if (field == null) {
             String superClassName = ((ConstantUtf8) clazz.getConstantPool().getConstant(((ConstantClass) clazz.getConstantPool().getConstant(clazz.getSuperclassNameIndex())).getNameIndex())).getBytes();

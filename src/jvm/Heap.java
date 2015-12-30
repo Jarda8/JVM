@@ -100,7 +100,7 @@ public class Heap {
         return fieldsSize;
     }
 
-    public int getTypeSize(byte type) throws Exception {
+    public static int getTypeSize(byte type) throws Exception {
 //        System.out.println(type);
         switch (type) {
             case 10:
