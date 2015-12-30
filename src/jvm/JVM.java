@@ -4,11 +4,13 @@ import java.io.*;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Deque;
+import java.util.HashMap;
 //import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import jvm.frame.Frame;
 import jvm.values.*;
-import nativemethods.ReadInts;
+import nativemethods.*;
 import org.apache.bcel.classfile.ClassParser;
 import org.apache.bcel.classfile.JavaClass;
 import org.apache.bcel.classfile.Method;
@@ -16,17 +18,22 @@ import org.apache.bcel.classfile.Method;
 public class JVM {
 
     static final Deque<Frame> frameStack = new ArrayDeque<>();
+    static final Deque<NativeMethod> nativeStack = new ArrayDeque<>();
+
     public static final Heap heap = new Heap();
     //Slouží jako Method Area ve specifikaci
 //    static final HashMap<String, JavaClass> classTable = new HashMap<>();
     static final List<JavaClass> classTable = new ArrayList<>();
+    static final Map<String, NativeMethod> nativeTable = new HashMap<>();
     //přidat native methods stack
 
     public static void main(String[] args) throws Exception {
         //loading main class
         JavaClass mainClass = (new ClassParser(args[0])).parse();
         classTable.add(mainClass);
-
+        
+        prepareNativeMethods();
+        
         ReferenceValue args2 = null;
         if (args.length > 1) {
             args2 = prepareMainArguments(args);
@@ -48,6 +55,13 @@ public class JVM {
         frameStack.pop();
         //uklidim haldu a classTable?
         heap.dumbHeap();
+    }
+    
+    private static void prepareNativeMethods() {
+        ReadInts readInts = new ReadInts();
+        nativeTable.put("readInts", readInts);
+        WriteInts writeInts = new WriteInts();
+        nativeTable.put("writeInts", writeInts);
     }
 
     private static ReferenceValue prepareMainArguments(String[] args) throws Exception {
@@ -118,7 +132,21 @@ public class JVM {
         frameStack.peek().start();
         frameStack.pop();
     }
-
+    
+    public static void callNativeMethod(Method method, Value[] arguments, ReferenceValue thisHeapIndex, Frame invoker) throws Exception {
+        nativeStack.push(nativeTable.get(method.getName()));
+        nativeStack.peek().start(arguments,thisHeapIndex,invoker);
+        nativeStack.pop();
+    }
+    
+    public static boolean isNative(Method method) throws Exception {
+        if (nativeTable.containsKey(method.getName())) {
+            return true;
+        } else {
+            return false;
+        }
+    }
+    
     //pomocná funkce na výpis unsigned bytů
     public static int unsignedToBytes(byte b) {
         return b & 0xFF;

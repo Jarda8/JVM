@@ -614,24 +614,35 @@ public class Frame {
                     break;
                 } else {
                    continue;
-                }
-                
+                }        
             }
         }
         
 
         Value[] arguments = null;
-        System.out.println(m.getArgumentTypes().length);
+        
+        System.out.println("Argumentu: " + m.getArgumentTypes().length);
+        System.out.println(m.isNative());
+        
         if (m.getArgumentTypes().length > 0) {
             arguments = new Value[m.getArgumentTypes().length];
+            System.out.println("Argument tagy:");
             for (int i = m.getArgumentTypes().length - 1; i >= 0; i--) {
                 arguments[i] = operandStack.pop();
+                System.out.println(arguments[i].tag);
             }
         }
         
-        System.out.println("Volá se metoda: " + m.getName());
-        JVM.callMethod(m, arguments, (ReferenceValue) operandStack.pop(), this);
-        System.out.println("Doběhla metoda " + m.getName());
+        if(JVM.isNative(m)) {
+            System.out.println("Volá se NATIVNI metoda: " + m.getName());
+            JVM.callNativeMethod(m, arguments, (ReferenceValue) operandStack.pop(), this);
+            System.out.println("Doběhla NATIVNI metoda " + m.getName());
+        } else {
+            System.out.println("Volá se metoda: " + m.getName());
+            JVM.callMethod(m, arguments, (ReferenceValue) operandStack.pop(), this);
+            System.out.println("Doběhla metoda " + m.getName());
+        }
+        
         pc += 2;
     }
     
