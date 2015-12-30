@@ -278,6 +278,9 @@ public class Frame {
                 case (byte) 0x34:
                     caload();
                     break;
+                case (byte) 0xc5:
+                    multianewarray();
+                    break;
                 default:
                     throw new Exception("Neznámá instrukce " + JVM.unsignedToBytes(code[pc]));
             }
@@ -392,6 +395,33 @@ public class Frame {
         ReferenceValue arrayRef = JVM.heap.allocateArray(((IntValue) operandStack.pop()).getValue(), sizeOfElement, classRef.getValue());
         operandStack.push(arrayRef);
         pc += 2;
+    }
+    
+    private void multianewarray() throws Exception {
+        System.out.println("multianewarray");
+        pc++;
+        int constPoolIndex = code[pc] << 8 | (code[pc + 1] & 0xFF);
+        int nameIndex = ((ConstantClass) constantPool.getConstant(constPoolIndex)).getNameIndex();
+        String className = ((ConstantUtf8) constantPool.getConstant(nameIndex)).getBytes();
+        System.out.println(className);
+        pc += 2;
+        int dimensions = code[pc];
+        IntValue[] dimensionsLengths = new IntValue[dimensions];
+        for (int i = dimensions - 1; i >= 0; i--) {
+            dimensionsLengths[i] = (IntValue) operandStack.pop();
+        }
+        int sizeOfElement = 4;
+        int sizeOfLastElement = 4;// Umí jenom inty.
+        int type = 13;//reference na pole
+        ReferenceValue arrayRef = JVM.heap.allocateArray(dimensionsLengths[0].getValue(), sizeOfElement, type);
+        ReferenceValue hlpArrayRef;
+        for (int i = 0; i < dimensionsLengths[0].getValue(); i++) {
+            hlpArrayRef = JVM.heap.allocateArray(dimensionsLengths[1].getValue(), sizeOfLastElement, 10);// Umí jenom inty
+            JVM.heap.storeRefToArray(hlpArrayRef, arrayRef, new IntValue(i));
+            
+        }
+        operandStack.push(arrayRef);
+        pc++;
     }
 
     private void dup() {
