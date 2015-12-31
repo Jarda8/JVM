@@ -29,6 +29,7 @@ public class JVM {
 
     public static void main(String[] args) throws Exception {
         //loading main class
+        //System.out.println(args[0]);
         JavaClass mainClass = (new ClassParser(args[0])).parse();
         classTable.add(mainClass);
         
@@ -54,10 +55,10 @@ public class JVM {
         //uklidim stack
         frameStack.pop();
         //uklidim haldu a classTable?
-        heap.dumbHeap();
-        for (JavaClass clazz : classTable) {
+        //heap.dumbHeap();
+        /*for (JavaClass clazz : classTable) {
             System.out.println(clazz.getClassName());
-        }
+        }*/
     }
     
     private static void prepareNativeMethods() {

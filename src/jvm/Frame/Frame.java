@@ -24,7 +24,7 @@ public class Frame {
     private final Frame invoker;
 
     public Frame(Method method, Value[] arguments, ReferenceValue thisHeapIndex, Frame invoker) throws Exception {
-        System.out.println("Vytváří se frame metody: " + method.getName());
+        //System.out.println("Vytváří se frame metody: " + method.getName());
         this.operandStack = new ArrayDeque<>(method.getCode().getMaxStack());
         this.localVariables = new Value[method.getCode().getMaxLocals()];
         this.constantPool = method.getConstantPool();
@@ -43,12 +43,12 @@ public class Frame {
                 localVariables[j] = arguments[i];
             }
         }
-        System.out.println("Vytvořil se frame metody: " + method.getName());
+        /*System.out.println("Vytvořil se frame metody: " + method.getName());
 
         System.out.println("Bytecode metody:");
         for (int k = 0; k < method.getCode().getCode().length; k++) {
             System.out.println(unsignedToBytes(method.getCode().getCode()[k]));
-        }
+        }*/
     }
 
     public Value[] getLocalVariables() {
@@ -68,7 +68,7 @@ public class Frame {
     }
 
     public void start() throws Exception {
-        System.out.println("Provádí se kód metody.");
+        //System.out.println("Provádí se kód metody.");
 
         //vykonávání bytecodu
         do {
@@ -284,7 +284,7 @@ public class Frame {
     }
 
     private void bipush() {
-        System.out.println("bipush");
+        //System.out.println("bipush");
         pc++;
         IntValue val = new IntValue(code[pc]);
         operandStack.push(val);
@@ -292,7 +292,7 @@ public class Frame {
     }
     
     private void istore() {
-        System.out.println("istore");
+        //System.out.println("istore");
         pc++;
         int index = code[pc];
         localVariables[index] = operandStack.pop();
@@ -300,48 +300,48 @@ public class Frame {
     }
 
     private void istore_0() {
-        System.out.println("istore_0");
+        //System.out.println("istore_0");
         pc++;
         localVariables[0] = operandStack.pop();
     }
 
     private void istore_1() {
-        System.out.println("istore_1");
+        //System.out.println("istore_1");
         pc++;
         localVariables[1] = operandStack.pop();
     }
 
     private void istore_2() {
-        System.out.println("istore_2");
+        //System.out.println("istore_2");
         pc++;
         localVariables[2] = operandStack.pop();
     }
 
     private void istore_3() {
-        System.out.println("istore_3");
+        //System.out.println("istore_3");
         pc++;
         localVariables[3] = operandStack.pop();
     }
 
     private void ret() {
-        System.out.println("ret");
+        //System.out.println("ret");
         pc = code.length;
     }
 
     private void iret() {
-        System.out.println("iret");
+        //System.out.println("iret");
         invoker.operandStack.push(operandStack.pop());
         pc = code.length;
     }
 
     private void aret() {
-        System.out.println("aret");
+        //System.out.println("aret");
         invoker.operandStack.push(operandStack.pop());
         pc = code.length;
     }
 
     private void neww() throws Exception {
-        System.out.println("new");
+        //System.out.println("new");
         pc++;
         int constPoolIndex = code[pc] << 8 | (code[pc + 1] & 0xFF);
         int nameIndex = ((ConstantClass) constantPool.getConstant(constPoolIndex)).getNameIndex();
@@ -350,11 +350,11 @@ public class Frame {
         ReferenceValue objRef = JVM.heap.allocateObject(classRef);
         operandStack.push(objRef);
         pc += 2;
-        JVM.heap.dumbHeap();
+        //JVM.heap.dumbHeap();
     }
 
     private void newarray() throws Exception {
-        System.out.println("newarray");
+        //System.out.println("newarray");
         int sizeOfElement;
         pc++;
         byte atype = code[pc];
@@ -362,11 +362,11 @@ public class Frame {
         ReferenceValue arrayRef = JVM.heap.allocateArray(((IntValue) operandStack.pop()).getValue(), sizeOfElement, atype);
         operandStack.push(arrayRef);
         pc++;
-        JVM.heap.dumbHeap();
+        //JVM.heap.dumbHeap();
     }
 
     private void anewarray() throws Exception {
-        System.out.println("anewarray");
+        //System.out.println("anewarray");
         pc++;
         int constPoolIndex = code[pc] << 8 | (code[pc + 1] & 0xFF);
         int nameIndex = ((ConstantClass) constantPool.getConstant(constPoolIndex)).getNameIndex();
@@ -380,12 +380,12 @@ public class Frame {
     }
     
     private void multianewarray() throws Exception {
-        System.out.println("multianewarray");
+        //System.out.println("multianewarray");
         pc++;
         int constPoolIndex = code[pc] << 8 | (code[pc + 1] & 0xFF);
         int nameIndex = ((ConstantClass) constantPool.getConstant(constPoolIndex)).getNameIndex();
         String className = ((ConstantUtf8) constantPool.getConstant(nameIndex)).getBytes();
-        System.out.println(className);
+        //System.out.println(className);
         pc += 2;
         int dimensions = code[pc];
         IntValue[] dimensionsLengths = new IntValue[dimensions];
@@ -407,56 +407,56 @@ public class Frame {
     }
 
     private void dup() {
-        System.out.println("dup");
+        //System.out.println("dup");
         pc++;
         Value topValue = operandStack.peek();
         operandStack.push(topValue);
     }
 
     private void iconst_m1() {
-        System.out.println("iconst_m1");
+        //System.out.println("iconst_m1");
         pc++;
         operandStack.push(new IntValue(-1));
     }
 
     private void iconst_0() {
-        System.out.println("iconst_0");
+        //System.out.println("iconst_0");
         pc++;
         operandStack.push(new IntValue(0));
     }
 
     private void iconst_1() {
-        System.out.println("iconst_1");
+        //System.out.println("iconst_1");
         pc++;
         operandStack.push(new IntValue(1));
     }
 
     private void iconst_2() {
-        System.out.println("iconst_2");
+        //System.out.println("iconst_2");
         pc++;
         operandStack.push(new IntValue(2));
     }
 
     private void iconst_3() {
-        System.out.println("iconst_3");
+        //System.out.println("iconst_3");
         pc++;
         operandStack.push(new IntValue(3));
     }
 
     private void iconst_4() {
-        System.out.println("iconst_4");
+        //System.out.println("iconst_4");
         pc++;
         operandStack.push(new IntValue(4));
     }
 
     private void iconst_5() {
-        System.out.println("iconst_5");
+        //System.out.println("iconst_5");
         pc++;
         operandStack.push(new IntValue(5));
     }
 
     private void invokespecial() throws Exception {
-        System.out.println("invokespecial");
+        //System.out.println("invokespecial");
         pc++;
         int constPoolIndex = code[pc] << 8 | (code[pc + 1] & 0xFF);
         ConstantMethodref methodRef = (ConstantMethodref) constantPool.getConstant(constPoolIndex);
@@ -469,7 +469,7 @@ public class Frame {
         int nameIndex = nameAndType.getNameIndex();
         String methodName = ((ConstantUtf8) constantPool.getConstant(nameIndex)).getBytes();
 
-        System.out.println("metoda " + methodName + " třídy " + className);
+        //System.out.println("metoda " + methodName + " třídy " + className);
 
         Method m = null;
         JavaClass clazz = JVM.getJavaClass(className);
@@ -484,7 +484,7 @@ public class Frame {
             while(true) {
                 String SuperClassName = ((ConstantUtf8) clazz.getConstantPool().getConstant(((ConstantClass) clazz.getConstantPool().getConstant(clazz.getSuperclassNameIndex())).getNameIndex())).getBytes();
                 clazz = jvm.JVM.getJavaClass(SuperClassName);
-                System.out.println("Prohladavame metody tridy " + clazz.getClassName());
+                //System.out.println("Prohladavame metody tridy " + clazz.getClassName());
             
                 for (Method method : clazz.getMethods()) {
                     if (method.getName().equals(methodName)) {
@@ -510,12 +510,12 @@ public class Frame {
         }
 
         JVM.callMethod(m, arguments, (ReferenceValue) operandStack.pop(), this);
-        System.out.println("Doběhla metoda " + m.getName());
+        //System.out.println("Doběhla metoda " + m.getName());
         pc += 2;
     }
 
     private void invokestatic() throws Exception {
-        System.out.println("invokestatic");
+        //System.out.println("invokestatic");
         pc++;
         int constPoolIndex = code[pc] << 8 | (code[pc + 1] & 0xFF);
         ConstantMethodref methodRef = (ConstantMethodref) constantPool.getConstant(constPoolIndex);
@@ -528,7 +528,7 @@ public class Frame {
         int nameIndex = nameAndType.getNameIndex();
         String methodName = ((ConstantUtf8) constantPool.getConstant(nameIndex)).getBytes();
 
-        System.out.println("metoda " + methodName + " třídy " + className);
+        //System.out.println("metoda " + methodName + " třídy " + className);
 
         Method m = null;
 
@@ -549,14 +549,14 @@ public class Frame {
             }
         }
 
-        System.out.println("Volá se metoda: " + m.getName());
+        //System.out.println("Volá se metoda: " + m.getName());
         JVM.callMethod(m, arguments, null, this);
-        System.out.println("Doběhla metoda " + m.getName());
+        //System.out.println("Doběhla metoda " + m.getName());
         pc += 2;
     }
     
     private void aload() {
-        System.out.println("aload");
+        //System.out.println("aload");
         pc++;
         int index = code[pc];
         operandStack.push(localVariables[index]);
@@ -564,7 +564,7 @@ public class Frame {
     }
 
     private void invokevirtual() throws Exception {
-        System.out.println("invokevirtual");
+        //System.out.println("invokevirtual");
         pc++;
         int constPoolIndex = code[pc] << 8 | (code[pc + 1] & 0xFF);
         ConstantMethodref methodRef = (ConstantMethodref) constantPool.getConstant(constPoolIndex);
@@ -576,7 +576,7 @@ public class Frame {
         int nameIndex = nameAndType.getNameIndex();
         String methodName = ((ConstantUtf8) constantPool.getConstant(nameIndex)).getBytes();
         
-        System.out.println("metoda " + methodName + " třídy " + className);
+        //System.out.println("metoda " + methodName + " třídy " + className);
         
         Method m = null;
       
@@ -592,7 +592,7 @@ public class Frame {
             while(true) {
                 String SuperClassName = ((ConstantUtf8) clazz.getConstantPool().getConstant(((ConstantClass) clazz.getConstantPool().getConstant(clazz.getSuperclassNameIndex())).getNameIndex())).getBytes();
                 clazz = jvm.JVM.getJavaClass(SuperClassName);
-                System.out.println("Prohladavame metody tridy " + clazz.getClassName());
+                //System.out.println("Prohladavame metody tridy " + clazz.getClassName());
             
                 for (Method method : clazz.getMethods()) {
                     if (method.getName().equals(methodName)) {
@@ -617,10 +617,10 @@ public class Frame {
         
         if (m.getArgumentTypes().length > 0) {
             arguments = new Value[m.getArgumentTypes().length];
-//            System.out.println("Argument tagy:");
+//           // System.out.println("Argument tagy:");
             for (int i = m.getArgumentTypes().length - 1; i >= 0; i--) {
                 arguments[i] = operandStack.pop();
-//                System.out.println(arguments[i].tag);
+//                //System.out.println(arguments[i].tag);
             }
         }
         
@@ -628,11 +628,11 @@ public class Frame {
         JavaClass instanceClass =  JVM.getJavaClassByIndex(new ReferenceValue(instanceClassIndex));
         
         if(instanceClass.getClassName() == null ? clazz.getClassName() != null : !instanceClass.getClassName().equals(clazz.getClassName())) {
-            System.out.println("\t Prohledavame metody tridy " + instanceClass.getClassName());
+            //System.out.println("\t Prohledavame metody tridy " + instanceClass.getClassName());
             
             for (Method method : instanceClass.getMethods()) {
                 if (method.getName().equals(methodName)) {
-                    System.out.println("Nasli jsme metodu v instanci!!!!");
+                    //System.out.println("Nasli jsme metodu v instanci!!!!");
                     m = method;
                     break;
                 }
@@ -640,44 +640,44 @@ public class Frame {
         }
         
         if(JVM.isNative(m)) {
-            System.out.println("Volá se NATIVNI metoda: " + m.getName());
+            //System.out.println("Volá se NATIVNI metoda: " + m.getName());
             JVM.callNativeMethod(m, arguments, (ReferenceValue) operandStack.pop(), this);
-            System.out.println("Doběhla NATIVNI metoda " + m.getName());
+            //System.out.println("Doběhla NATIVNI metoda " + m.getName());
         } else {
-            System.out.println("Volá se metoda: " + m.getName());
+           // System.out.println("Volá se metoda: " + m.getName());
             JVM.callMethod(m, arguments, (ReferenceValue) operandStack.pop(), this);
-            System.out.println("Doběhla metoda " + m.getName());
+            //System.out.println("Doběhla metoda " + m.getName());
         }
         
         pc += 2;
     }
     
     private void aload_0() {
-        System.out.println("aload_0");
+      //  System.out.println("aload_0");
         pc++;
         operandStack.push(localVariables[0]);
     }
 
     private void aload_1() {
-        System.out.println("aload_1");
+       // System.out.println("aload_1");
         pc++;
         operandStack.push(localVariables[1]);
     }
 
     private void aload_2() {
-        System.out.println("aload_2");
+        //System.out.println("aload_2");
         pc++;
         operandStack.push(localVariables[2]);
     }
 
     private void aload_3() {
-        System.out.println("aload_3");
+        //System.out.println("aload_3");
         pc++;
         operandStack.push(localVariables[3]);
     }
     
     private void iload() {
-        System.out.println("iload");
+        //System.out.println("iload");
         pc++;
         int index = code[pc];
         operandStack.push(localVariables[index]);
@@ -685,55 +685,55 @@ public class Frame {
     }
 
     private void iload_0() {
-        System.out.println("iload_0");
+        //System.out.println("iload_0");
         pc++;
         operandStack.push(localVariables[0]);
     }
 
     private void iload_1() {
-        System.out.println("iload_1");
+        //System.out.println("iload_1");
         pc++;
         operandStack.push(localVariables[1]);
     }
 
     private void iload_2() {
-        System.out.println("iload_2");
+        //System.out.println("iload_2");
         pc++;
         operandStack.push(localVariables[2]);
     }
 
     private void iload_3() {
-        System.out.println("iload_3");
+        //System.out.println("iload_3");
         pc++;
         operandStack.push(localVariables[3]);
     }
 
     private void astore_0() {
-        System.out.println("astore_0");
+        //System.out.println("astore_0");
         pc++;
         localVariables[0] = operandStack.pop();
     }
 
     private void astore_1() {
-        System.out.println("astore_1");
+       //System.out.println("astore_1");
         pc++;
         localVariables[1] = operandStack.pop();
     }
 
     private void astore_2() {
-        System.out.println("astore_2");
+        //System.out.println("astore_2");
         pc++;
         localVariables[2] = operandStack.pop();
     }
 
     private void astore_3() {
-        System.out.println("astore_3");
+        //System.out.println("astore_3");
         pc++;
         localVariables[3] = operandStack.pop();
     }
 
     private void astore() {
-        System.out.println("astore");
+        //System.out.println("astore");
         pc++;
         int index = code[pc];
         localVariables[index] = operandStack.pop();
@@ -777,7 +777,7 @@ public class Frame {
     }
 
     private void putfield() throws Exception {
-        System.out.println("putfield");
+        //System.out.println("putfield");
         pc++;
         int constPoolIndex = code[pc] << 8 | (code[pc + 1] & 0xFF);
         ConstantFieldref fieldRef = (ConstantFieldref) constantPool.getConstant(constPoolIndex);
@@ -813,7 +813,7 @@ public class Frame {
     }
 
     private void getfield() throws Exception {
-        System.out.println("getfield");
+        //System.out.println("getfield");
         pc++;
         int constPoolIndex = code[pc] << 8 | (code[pc + 1] & 0xFF);
         ConstantFieldref fieldRef = (ConstantFieldref) constantPool.getConstant(constPoolIndex);
@@ -849,7 +849,7 @@ public class Frame {
     }
 
     private void sipush() {
-        System.out.println("sipush");
+        //System.out.println("sipush");
         pc++;
         short s = (short) (code[pc] << 8 | (code[pc + 1] & 0xFF));
         int i = s;
@@ -858,7 +858,7 @@ public class Frame {
     }
 
     private void iastore() throws Exception {
-        System.out.println("iastore");
+        //System.out.println("iastore");
         pc++;
         IntValue value = (IntValue) operandStack.pop();
         IntValue index = (IntValue) operandStack.pop();
@@ -867,7 +867,7 @@ public class Frame {
     }
 
     private void aastore() throws Exception {
-        System.out.println("aastore");
+        //System.out.println("aastore");
         pc++;
         ReferenceValue value = (ReferenceValue) operandStack.pop();
         IntValue index = (IntValue) operandStack.pop();
@@ -876,7 +876,7 @@ public class Frame {
     }
 
     private void aaload() throws Exception {
-        System.out.println("aaload");
+        //System.out.println("aaload");
         pc++;
         IntValue index = (IntValue) operandStack.pop();
         ReferenceValue arrayRef = (ReferenceValue) operandStack.pop();
@@ -885,7 +885,7 @@ public class Frame {
     }
 
     private void iaload() throws Exception {
-        System.out.println("iaload");
+        //System.out.println("iaload");
         pc++;
         IntValue index = (IntValue) operandStack.pop();
         ReferenceValue arrayRef = (ReferenceValue) operandStack.pop();
@@ -893,14 +893,14 @@ public class Frame {
     }
 
     private void iadd() {
-        System.out.println("iadd");
+        //System.out.println("iadd");
         pc++;
         IntValue result = ((IntValue) operandStack.pop()).add((IntValue) operandStack.pop());
         operandStack.push(result);
     }
 
     private void isub() {
-        System.out.println("isub");
+        //System.out.println("isub");
         pc++;
         IntValue x = (IntValue) operandStack.pop();
         IntValue result = ((IntValue) operandStack.pop()).sub(x);
@@ -908,14 +908,14 @@ public class Frame {
     }
 
     private void imul() {
-        System.out.println("imul");
+        //System.out.println("imul");
         pc++;
         IntValue result = ((IntValue) operandStack.pop()).mul((IntValue) operandStack.pop());
         operandStack.push(result);
     }
 
     private void idiv() {
-        System.out.println("idiv");
+        //System.out.println("idiv");
         pc++;
         IntValue x = (IntValue) operandStack.pop();
         IntValue result = ((IntValue) operandStack.pop()).div(x);
@@ -923,13 +923,13 @@ public class Frame {
     }
 
     private void gotoo() {
-        System.out.println("goto");
+        //System.out.println("goto");
         short offset = (short) (code[pc + 1] << 8 | (code[pc + 2] & 0xFF));
         pc += offset;
     }
 
     private void ifeq() {
-        System.out.println("ifeq");
+        //System.out.println("ifeq");
         if (((IntValue) operandStack.pop()).getValue() == 0) {
             short offset = (short) (code[pc + 1] << 8 | (code[pc + 2] & 0xFF));
             pc += offset;
@@ -939,7 +939,7 @@ public class Frame {
     }
 
     private void ifne() {
-        System.out.println("ifne");
+        //System.out.println("ifne");
         if (((IntValue) operandStack.pop()).getValue() != 0) {
             short offset = (short) (code[pc + 1] << 8 | (code[pc + 2] & 0xFF));
             pc += offset;
@@ -949,7 +949,7 @@ public class Frame {
     }
 
     private void iflt() {
-        System.out.println("iflt");
+        //System.out.println("iflt");
         if (((IntValue) operandStack.pop()).getValue() < 0) {
             short offset = (short) (code[pc + 1] << 8 | (code[pc + 2] & 0xFF));
             pc += offset;
@@ -959,7 +959,7 @@ public class Frame {
     }
 
     private void ifgt() {
-        System.out.println("ifgt");
+        //System.out.println("ifgt");
         if (((IntValue) operandStack.pop()).getValue() > 0) {
             short offset = (short) (code[pc + 1] << 8 | (code[pc + 2] & 0xFF));
             pc += offset;
@@ -969,7 +969,7 @@ public class Frame {
     }
 
     private void ifle() {
-        System.out.println("ifle");
+        //System.out.println("ifle");
         if (((IntValue) operandStack.pop()).getValue() <= 0) {
             short offset = (short) (code[pc + 1] << 8 | (code[pc + 2] & 0xFF));
             pc += offset;
@@ -979,7 +979,7 @@ public class Frame {
     }
 
     private void ifge() {
-        System.out.println("ifge");
+        //System.out.println("ifge");
         if (((IntValue) operandStack.pop()).getValue() >= 0) {
             short offset = (short) (code[pc + 1] << 8 | (code[pc + 2] & 0xFF));
             pc += offset;
@@ -989,7 +989,7 @@ public class Frame {
     }
 
     private void if_icmpeq() {
-        System.out.println("if_icmpeq");
+        //System.out.println("if_icmpeq");
         IntValue value2 = (IntValue) operandStack.pop();
         IntValue value1 = (IntValue) operandStack.pop();
         if (value1.getValue() == value2.getValue()) {
@@ -1001,7 +1001,7 @@ public class Frame {
     }
 
     private void if_icmpne() {
-        System.out.println("if_icmpne");
+        //System.out.println("if_icmpne");
         IntValue value2 = (IntValue) operandStack.pop();
         IntValue value1 = (IntValue) operandStack.pop();
         if (value1.getValue() != value2.getValue()) {
@@ -1013,7 +1013,7 @@ public class Frame {
     }
 
     private void if_icmplt() {
-        System.out.println("if_icmplt");
+        //System.out.println("if_icmplt");
         IntValue value2 = (IntValue) operandStack.pop();
         IntValue value1 = (IntValue) operandStack.pop();
         if (value1.getValue() < value2.getValue()) {
@@ -1025,7 +1025,7 @@ public class Frame {
     }
 
     private void if_icmpge() {
-        System.out.println("if_icmpge");
+        //System.out.println("if_icmpge");
         IntValue value2 = (IntValue) operandStack.pop();
         IntValue value1 = (IntValue) operandStack.pop();
         if (value1.getValue() >= value2.getValue()) {
@@ -1037,7 +1037,7 @@ public class Frame {
     }
 
     private void if_icmpgt() {
-        System.out.println("if_icmpgt");
+        //System.out.println("if_icmpgt");
         IntValue value2 = (IntValue) operandStack.pop();
         IntValue value1 = (IntValue) operandStack.pop();
         if (value1.getValue() > value2.getValue()) {
@@ -1049,7 +1049,7 @@ public class Frame {
     }
 
     private void if_icmple() {
-        System.out.println("if_icmple");
+        //System.out.println("if_icmple");
         IntValue value2 = (IntValue) operandStack.pop();
         IntValue value1 = (IntValue) operandStack.pop();
         if (value1.getValue() <= value2.getValue()) {
@@ -1061,7 +1061,7 @@ public class Frame {
     }
 
     private void iinc() {
-        System.out.println("iinc");
+        //System.out.println("iinc");
         pc++;
         short index = (short) code[pc];
         IntValue constant = new IntValue(code[pc + 1]);
@@ -1070,25 +1070,25 @@ public class Frame {
     }
 
     private void pop() {
-        System.out.println("pop");
+        //System.out.println("pop");
         pc++;
         operandStack.pop();
     }
 
     private void aconst_null() {
-        System.out.println("aconst_null");
+        //System.out.println("aconst_null");
         pc++;
         operandStack.push(new ReferenceValue(0));
     }
     
     private void arraylength() {
-        System.out.println("arraylength");
+        //System.out.println("arraylength");
         pc++;
         operandStack.push(JVM.heap.getArrayLength((ReferenceValue) operandStack.pop()));
     }
     
     private void caload() throws Exception {
-        System.out.println("caload");
+        //System.out.println("caload");
         pc++;
         IntValue index = (IntValue) operandStack.pop();
         ReferenceValue arrayRef = (ReferenceValue) operandStack.pop();
