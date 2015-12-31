@@ -21,12 +21,9 @@ public class JVM {
     static final Deque<NativeMethod> nativeStack = new ArrayDeque<>();
 
     public static final Heap heap = new Heap();
-    //Slouží jako Method Area ve specifikaci
-//    static final HashMap<String, JavaClass> classTable = new HashMap<>();
     static final List<JavaClass> classTable = new ArrayList<>();
     static final Map<String, NativeMethod> nativeTable = new HashMap<>();
-    //přidat native methods stack
-
+    
     public static void main(String[] args) throws Exception {
         //loading main class
         //System.out.println(args[0]);
@@ -54,7 +51,6 @@ public class JVM {
         //program doběhl
         //uklidim stack
         frameStack.pop();
-        //uklidim haldu a classTable?
         //heap.dumbHeap();
         /*for (JavaClass clazz : classTable) {
             System.out.println(clazz.getClassName());
@@ -89,9 +85,6 @@ public class JVM {
     }
 
     public static JavaClass getJavaClass(String className) throws IOException {
-//        if (className.equals("java/lang/Object")) {
-//            className = "initclasses/Object";
-//        }
         String classNameDots =  className.replaceAll("/", ".");
         JavaClass result = null;
         for (JavaClass clazz : classTable) {
@@ -102,16 +95,12 @@ public class JVM {
         }
         if (result == null) {
             result = (new ClassParser(className + ".class")).parse();
-            //chybí alokace a inicializace třídních proměnných
             classTable.add(result);
         }
         return result;
     }
 
     public static ReferenceValue getJavaClassRef(String className) throws IOException {
-//        if (className.equals("java/lang/Object")) {
-//            className = "initclasses/Object";
-//        }
         String classNameDots =  className.replaceAll("/", ".");
         int result = -1;
         for (int i = 0; i < classTable.size(); i++) {
@@ -123,7 +112,6 @@ public class JVM {
         if (result == -1) {
             JavaClass newClass = (new ClassParser(className + ".class")).parse();
             classTable.add(newClass);
-            //chybí alokace a inicializace třídních proměnných
             result = classTable.indexOf(newClass);
         }
         return new ReferenceValue(result);

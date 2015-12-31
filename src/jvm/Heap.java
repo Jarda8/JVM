@@ -80,9 +80,6 @@ public class Heap {
     private int getSuperclassFieldsSize(JavaClass superClass) throws Exception {
         int fieldsSize = 0;
 
-//        if (superClass.getClassName().equals("initclasses.Object")) {
-//            return 0;
-//        }
         if (superClass.getClassName().equals("java.lang.Object")) {
             return 0;
         }
@@ -337,9 +334,6 @@ public class Heap {
     private int markSuperclassFields(JavaClass superClass, int objRef) throws Exception {
         int fieldOffset = 0;
 
-//        if (superClass.getClassName().equals("initclasses.Object")) {
-//            return 0;
-//        }
         if (superClass.getClassName().equals("java.lang.Object")) {
             return 0;
         }

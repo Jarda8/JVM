@@ -6,9 +6,8 @@ import jvm.values.Value;
  *
  * @author Jaroslav Ševčík
  */
-//možná nebude třeba
+
 public class LocalVariable {
-    //int nameIndex;
     private Value value;
 
     public LocalVariable(Value value) {

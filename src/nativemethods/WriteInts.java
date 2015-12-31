@@ -24,7 +24,6 @@ public class WriteInts implements NativeMethod {
         int length = JVM.heap.getArrayLength(intArray).getValue();
         
         for (int i = 0; i < length; i++) {
-//            JVM.heap.storeIntToArray(new IntValue(scanner.nextInt()), result, new IntValue(i));
             pw.print(JVM.heap.fetchIntFromArray(intArray, new IntValue(i)).getValue());
             pw.print(" ");
         }

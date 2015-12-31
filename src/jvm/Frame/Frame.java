@@ -393,12 +393,12 @@ public class Frame {
             dimensionsLengths[i] = (IntValue) operandStack.pop();
         }
         int sizeOfElement = 4;
-        int sizeOfLastElement = 4;// Umí jenom inty.
+        int sizeOfLastElement = 4;
         int type = 13;// reference na pole
         ReferenceValue arrayRef = JVM.heap.allocateArray(dimensionsLengths[0].getValue(), sizeOfElement, type);
         ReferenceValue hlpArrayRef;
         for (int i = 0; i < dimensionsLengths[0].getValue(); i++) {
-            hlpArrayRef = JVM.heap.allocateArray(dimensionsLengths[1].getValue(), sizeOfLastElement, 10);// Umí jenom inty
+            hlpArrayRef = JVM.heap.allocateArray(dimensionsLengths[1].getValue(), sizeOfLastElement, 10);
             JVM.heap.storeRefToArray(hlpArrayRef, arrayRef, new IntValue(i));
             
         }
@@ -611,9 +611,6 @@ public class Frame {
         
 
         Value[] arguments = null;
-        
-//        System.out.println("Argumentu: " + m.getArgumentTypes().length);
-//        System.out.println(m.isNative());
         
         if (m.getArgumentTypes().length > 0) {
             arguments = new Value[m.getArgumentTypes().length];
@@ -1094,18 +1091,5 @@ public class Frame {
         ReferenceValue arrayRef = (ReferenceValue) operandStack.pop();
         operandStack.push(JVM.heap.fetchCharFromArray(arrayRef, index));
     }
-    
-//    private void ldc() throws Exception {
-//        System.out.println("ldc");
-//        pc++;
-//        int index = code[pc];
-//        Constant c = constantPool.getConstant(index);
-//        switch(c.getTag()) {
-//            case 8: index = ((ConstantString) c).getStringIndex();
-//                String s = ((ConstantUtf8) constantPool.getConstant(index)).getBytes();
-//                JVM.heap.allocateObject(JVM.getJavaClassRef("java/lang/String"));
-//        }
-//        pc++;
-//    }
 
 }
